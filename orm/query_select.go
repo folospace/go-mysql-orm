@@ -28,7 +28,7 @@ func (m *Query) SelectMapOfStructKeyByColumn1(dest interface{}, columns ...inter
 func (m *Query) SelectMapOfColumn2KeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
-func (m *Query) SelectAsTemp(columns ...interface{}) *tempTable {
+func (m *Query) PreSelectAsTemp(columns ...interface{}) *tempTable {
     tempTable := m.generateSelectQuery(columns...)
 
     tempTable.db = m.db
