@@ -1,0 +1,19 @@
+package orm
+
+import "context"
+
+func (m *Query) Transaction(query func(db *Query) error) error {
+    tx, err := m.DB().BeginTx(context.Background(), nil)
+    if err != nil {
+        return err
+    }
+    m.tx = tx
+
+    err = query(m)
+
+    if err != nil {
+        _ = tx.Rollback()
+        return err
+    }
+    return tx.Commit()
+}
