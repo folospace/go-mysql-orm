@@ -128,12 +128,12 @@ func main() {
         //join subquery
         var data []Order
         //select * from order join (select id from user limit 5) temp on order.user_id=temp.id
-        OrderTable.Query().Join(UserTable.Query().Limit(5).SelectAsTemp(&UserTable.Id), func(join *orm.Query) {
+        OrderTable.Query().Join(UserTable.Query().Limit(5).PreSelectAsTemp(&UserTable.Id), func(join *orm.Query) {
             join.Where(&OrderTable.UserId, orm.Raw("temp.id"))
         }).Select(&data)
     }
     {
-        subquery := UserTable.Query().Limit(5).SelectAsTemp(&UserTable.Id)
+        subquery := UserTable.Query().Limit(5).PreSelectAsTemp(&UserTable.Id)
 
         var data []User
         //select * from (subquery)
