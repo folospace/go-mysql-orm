@@ -16,7 +16,7 @@ func (m *tempTable) Query() *Query {
 }
 
 func (*tempTable) TableName() string {
-    return "temp"
+    return "sub"
 }
 
 func (m *tempTable) DatabaseName() string {
