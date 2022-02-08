@@ -136,7 +136,7 @@ func (m *Query) parseColumn(v interface{}) (string, error) {
         if column == "" {
             return "", errors.New("column is not exist in table " + table.table.TableName())
         }
-        prefix := table.getTableName()
+        prefix := table.getAliasOrTableName()
         if prefix != "" {
             prefix += "."
         }

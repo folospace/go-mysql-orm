@@ -1,6 +1,9 @@
 package orm
 
-import "reflect"
+import (
+    "reflect"
+    "strings"
+)
 
 type JoinType string
 
@@ -23,20 +26,30 @@ type queryTable struct {
 }
 
 func (q queryTable) getAlias() string {
-    if q.rawSql != "" {
-        if q.alias != "" {
-            return q.alias
-        }
-        return q.table.TableName()
-    } else {
-        return q.alias
-    }
+    return q.alias
 }
 
-func (q queryTable) getTableName() string {
+func (q queryTable) getAliasOrTableName() string {
     if q.alias != "" {
         return q.alias
     }
+    return q.getTableName()
+}
+
+func (q queryTable) getTableNameAndAlias() string {
+    var strs []string
+    temp := q.getTableName()
+    if temp != "" {
+        strs = append(strs, temp)
+    }
+    temp = q.getAlias()
+    if temp != "" {
+        strs = append(strs, temp)
+    }
+    return strings.Join(strs, " ")
+}
+
+func (q queryTable) getTableName() string {
     if q.table.TableName() != "" {
         if q.table.DatabaseName() != "" {
             return q.table.DatabaseName() + "." + q.table.TableName()

@@ -22,6 +22,8 @@ func (m *Query) join(joinType JoinType, table Table, wheref func(*Query), alias 
 
     if len(alias) > 0 {
         newTable.alias = alias[0]
+    } else if newTable.rawSql != "" {
+        newTable.alias = "sub"
     }
 
     newTable.joinType = joinType
@@ -39,16 +41,10 @@ func (m *Query) generateTableAndJoinStr(tables []*queryTable, bindings *[]interf
         tempStr := ""
         if v.rawSql == "" {
             if k == 0 {
-                tempStr = v.table.DatabaseName() + "." + v.table.TableName()
-                if v.alias != "" {
-                    tempStr += " " + v.alias
-                }
+                tempStr = v.getTableNameAndAlias()
             } else {
                 tempStr = string(v.joinType)
-                tempStr += " " + v.table.DatabaseName() + "." + v.table.TableName()
-                if v.alias != "" {
-                    tempStr += " " + v.alias
-                }
+                tempStr += " " + v.getTableNameAndAlias()
                 if len(v.joinCondition.SubWheres) > 0 {
                     whereStr := m.generateWhereStr(v.joinCondition.SubWheres, bindings)
                     tempStr += " on " + whereStr
