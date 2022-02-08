@@ -129,7 +129,7 @@ func main() {
         //join subquery
         var data []Order
 
-        //select * from order join (select id from user limit 5) temp on order.user_id=temp.id
+        //select * from order join (select id from user limit 5) sub on order.user_id=sub.id
         OrderTable.Query().Join(subquery, func(join *orm.Query) {
             join.Where(&OrderTable.UserId, orm.Raw("sub.id"))
         }).Select(&data)
