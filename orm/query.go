@@ -52,6 +52,8 @@ func (m *Query) FromTable(table Table, alias ...string) *Query {
 
     if len(alias) > 0 {
         newTable.alias = alias[0]
+    } else if newTable.rawSql != "" {
+        newTable.alias = "sub"
     }
     m.tables = append(m.tables, newTable)
     return m
