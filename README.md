@@ -133,5 +133,8 @@ func main() {
 
         //select * from user where id in (subquery)
         UserTable.Query().Where(&UserTable.Id, orm.WhereIn, subquery).Select(&data)
+
+        //insert ingore into user (id) select id from user limit 5 on duplicate key update name="change selected users' name"
+        UserTable.Query().InsertIgnore(subquery, []interface{}{&UserTable.Id}, orm.UpdateColumn{Column: &UserTable.Name, Val: "change selected users' name"})
     }
 ```
