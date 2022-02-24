@@ -20,19 +20,25 @@ func (m *Query) InsertIgnore(data interface{}, tableFieldAddrs []interface{}, up
 func (m *Query) gennerateInsertSql(InsertColumns []string, rowCount int) string {
     columnRawStr := ""
     valRawStr := ""
-    for _, v := range InsertColumns {
-        columnRawStr += "`" + v + "`,"
-        valRawStr += "?,"
-    }
-    columnRawStr = "(" + strings.TrimRight(columnRawStr, ",") + ")"
-    valRawStr = "(" + strings.TrimRight(valRawStr, ",") + ")"
 
-    rows := make([]string, rowCount)
-    for k := range rows {
-        rows[k] = valRawStr
+    if len(InsertColumns) > 0 {
+        for _, v := range InsertColumns {
+            columnRawStr += "`" + v + "`,"
+            valRawStr += "?,"
+        }
+        columnRawStr = "(" + strings.TrimRight(columnRawStr, ",") + ")"
+        valRawStr = "(" + strings.TrimRight(valRawStr, ",") + ")"
     }
 
-    return columnRawStr + " values " + strings.Join(rows, ",")
+    if rowCount > 0 {
+        rows := make([]string, rowCount)
+        for k := range rows {
+            rows[k] = valRawStr
+        }
+        return columnRawStr + " values " + strings.Join(rows, ",")
+    } else {
+        return columnRawStr
+    }
 }
 
 func (m *Query) getInsertBindings(val reflect.Value, isSlice bool, validFieldIndex map[int]struct{}) []interface{} {
@@ -59,6 +65,8 @@ func (m *Query) insert(ignore bool, data interface{}, tableFieldAddrs []interfac
     val := reflect.ValueOf(data)
     var err error
     isSlice := false
+    isSubQuery := false
+    var subQuery *tempTable
     rowCount := 1
     var structFields []string
     if val.Kind() == reflect.Slice {
@@ -74,20 +82,29 @@ func (m *Query) insert(ignore bool, data interface{}, tableFieldAddrs []interfac
             structFields, err = getStructFieldNameSlice(val.Index(0).Interface())
             m.setErr(err)
         }
-    } else if val.Kind() != reflect.Struct {
-        m.setErr(errors.New("data must be struct or slice of struct"))
-    } else {
+    } else if val.Kind() == reflect.Struct {
         structFields, err = getStructFieldNameSlice(data)
         m.setErr(err)
+    } else if val.Kind() == reflect.Ptr {
+        sub, ok := data.(*tempTable)
+        if ok == false {
+            m.setErr(errors.New("data is not a subquery"))
+        } else {
+            isSubQuery = true
+            subQuery = sub
+        }
+    } else {
+        m.setErr(errors.New("data must be struct or slice of struct"))
     }
 
     if m.result.Err != nil {
         return m.result
     }
 
-    var validFieldName = make(map[string]struct{})
+    var validFieldNameMap = make(map[string]struct{})
+    var validFieldNames = make([]string, 0)
     var validFieldIndex = make(map[int]struct{})
-    var InsertColumns []string
+    var InsertColumns []string //actually insert columns
     var allowFields = make(map[interface{}]struct{})
 
     for _, v := range tableFieldAddrs {
@@ -95,22 +112,33 @@ func (m *Query) insert(ignore bool, data interface{}, tableFieldAddrs []interfac
     }
     for k, v := range m.tables[0].jsonFields {
         _, ok := allowFields[k]
-        if ok || len(allowFields) == 0 {
-            validFieldName[v] = struct{}{}
+        if ok || (len(allowFields) == 0 && isSubQuery == false) {
+            validFieldNameMap[v] = struct{}{}
+            validFieldNames = append(validFieldNames, v)
         }
     }
 
-    for k, v := range structFields {
-        if _, ok := validFieldName[v]; ok {
-            validFieldIndex[k] = struct{}{}
-            InsertColumns = append(InsertColumns, v)
+    var insertSql, updateStr string
+    var bindings []interface{}
+    if isSubQuery && subQuery != nil {
+        insertSql = m.gennerateInsertSql(validFieldNames, 0)
+        if insertSql != "" {
+            insertSql += " "
         }
+        insertSql += subQuery.raw
+        bindings = subQuery.bindings
+    } else {
+        for k, v := range structFields {
+            if _, ok := validFieldNameMap[v]; ok {
+                validFieldIndex[k] = struct{}{}
+                InsertColumns = append(InsertColumns, v)
+            }
+        }
+        insertSql = m.gennerateInsertSql(InsertColumns, rowCount)
+        bindings = m.getInsertBindings(val, isSlice, validFieldIndex)
     }
 
-    var insertSql = m.gennerateInsertSql(InsertColumns, rowCount)
-    var bindings = m.getInsertBindings(val, isSlice, validFieldIndex)
-
-    updateStr := m.generateUpdateStr(updates, &bindings)
+    updateStr = m.generateUpdateStr(updates, &bindings)
 
     rawSql := "insert"
     if ignore {
