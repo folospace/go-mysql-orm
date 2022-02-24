@@ -1,6 +1,6 @@
 # golang mysql orm
-- Easy to use
-- To be improved, use with caution
+- A painless orm 
+- In progress
 ## struct of table 
 ```go
 import (
