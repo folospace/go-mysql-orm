@@ -138,3 +138,16 @@ func main() {
         UserTable.Query().InsertIgnore(subquery, []interface{}{&UserTable.Id}, orm.UpdateColumn{Column: &UserTable.Name, Val: "change selected users' name"})
     }
 ```
+
+## migrate (create table)
+```go
+    type User struct {
+            Id int `json:"id"`
+            Email string `json:"email" orm:"varchar(64),null,unique,index_email_and_score" comment:"user email"`
+            Score int `json:"score" orm:"index,index_email_and_score" comment:"user score"`
+            Name string `json:"name" default:"john" comment:"user name"`
+            CreatedAt orm.JsonTime `json:"created_at"`
+            UpdatedAt orm.JsonTime `json:"updated_at"`
+    }
+    createTableSql, err := UserTable.Query().Migrate()
+```
