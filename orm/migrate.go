@@ -31,34 +31,97 @@ type dBColumn struct {
     Uniques []string //composite unique index names
 }
 
-func (m *Query) Migrate() error {
+func (m *Query) Migrate() (string, error) {
     db := m.DB()
     if db == nil {
-        return errors.New("no db exist")
+        return "", errors.New("no db exist")
     }
 
     if len(m.tables) == 0 || len(m.tables[0].jsonFields) == 0 ||
         m.tables[0].table == nil || m.tables[0].table.TableName() == "" {
-        return errors.New("no table exist")
+        return "", errors.New("no table exist")
     }
 
     dbColums := m.getMigrateColumns(m.tables[0])
     if len(dbColums) == 0 {
-        return errors.New("no column exist")
+        return "", errors.New("no column exist")
     }
 
     dbColumnStrs := m.generateColumnStrings(dbColums)
 
-    createTableSql := "create table IF NOT EXISTS  `%s` (%s)"
-
-    createTableSql = fmt.Sprintf(createTableSql, m.tables[0].table.TableName(), strings.Join(dbColumnStrs, ","))
+    createTableSql := fmt.Sprintf("create table IF NOT EXISTS  `%s` (%s)",
+        m.tables[0].table.TableName(),
+        strings.Join(dbColumnStrs, ","))
 
     _, err := db.Exec(createTableSql)
-    return err
+    return createTableSql, err
 }
 
 func (m *Query) generateColumnStrings(dbColums []dBColumn) []string {
-    return nil
+    var ret []string
+    var primaryStr string
+    var uniqueColumns []string
+    var indexColumns []string
+    var uniqueComps = make(map[string][]string)
+    var indexComps = make(map[string][]string)
+
+    for _, v := range dbColums {
+        var words []string
+        //add column name
+        words = append(words, "`"+v.Name+"`")
+        //add type
+        words = append(words, v.Type)
+
+        //add null
+        if v.Null {
+            words = append(words, "null")
+        } else {
+            words = append(words, "not null")
+        }
+
+        //add default
+        if v.AutoIncrement {
+            words = append(words, "auto_increment")
+        } else if v.Default != "" {
+            words = append(words, "default "+"'"+v.Default+"'")
+        }
+
+        //add comment
+        if v.Comment != "" {
+            words = append(words, "comment "+"'"+v.Comment+"'")
+        }
+
+        if v.Primary {
+            primaryStr = fmt.Sprintf("primary key (%s)", "`"+v.Name+"`")
+        } else if v.Unique {
+            uniqueColumns = append(uniqueColumns, fmt.Sprintf("unique key `%s` (`%s`)", v.Name, v.Name))
+        } else if v.Index {
+            indexColumns = append(indexColumns, fmt.Sprintf("key `%s` (`%s`)", v.Name, v.Name))
+        }
+
+        if len(v.Uniques) > 0 {
+            for _, v2 := range v.Uniques {
+                uniqueComps[v2] = append(uniqueComps[v2], "`"+v.Name+"`")
+            }
+        }
+
+        if len(v.Indexs) > 0 {
+            for _, v2 := range v.Indexs {
+                indexComps[v2] = append(indexComps[v2], "`"+v.Name+"`")
+            }
+        }
+        ret = append(ret, strings.Join(words, " "))
+    }
+    if primaryStr != "" {
+        ret = append(ret, primaryStr)
+    }
+    for k, v := range uniqueComps {
+        ret = append(ret, fmt.Sprintf("unique key `%s` (%s)", k, strings.Join(v, ",")))
+    }
+    for k, v := range indexComps {
+        ret = append(ret, fmt.Sprintf("key `%s` (%s)", k, strings.Join(v, ",")))
+    }
+    return ret
 }
 
 func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
