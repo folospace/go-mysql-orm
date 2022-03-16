@@ -15,7 +15,6 @@ type JsonTime struct {
 func (t JsonTime) MarshalJSON() ([]byte, error) {
     //formatted := fmt.Sprintf("\"%s\"", t.Format("2006-01-02 15:04:05"))
     //return []byte(formatted), nil
-    //格式化秒
     ts := t.UnixNano() / 1e6
     if ts < 0 {
         ts = 0
@@ -27,12 +26,11 @@ func (t JsonTime) MarshalJSON() ([]byte, error) {
 func (t *JsonTime) UnmarshalJSON(data []byte) error {
     //formatted := fmt.Sprintf("\"%s\"", t.Format("2006-01-02 15:04:05"))
     //return []byte(formatted), nil
-    //格式化秒
     val, err := strconv.ParseInt(string(data), 10, 64)
     if err != nil {
         return err
     }
-    if val == 0 { // 兼容queue+gorm问题
+    if val == 0 {
         t.Time = time.Time{}
         return nil
     }
