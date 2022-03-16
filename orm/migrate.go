@@ -7,14 +7,16 @@ import (
     "strings"
 )
 
-const primaryKeyPrefix = "keyp"
-const uniqueKeyPrefix = "keyu"
-const keyPrefix = "key"
+const primaryKeyPrefix = "primary"
+const uniqueKeyPrefix = "unique"
+const keyPrefix = "index"
 const nullPrefix = "null"
-const autoIncrementPrefix = "ai"
+const autoIncrementPrefix = "auto_increment"
 const createdAtColumn = "created_at"
 const updatedAtColumn = "updated_at"
 const deletedAtColumn = "deleted_at"
+
+var definedDefault = []string{"null", "current_timestamp", "current_timestamp on update current_timestamp"}
 
 type dBColumn struct {
     Name          string // `id`
@@ -49,7 +51,7 @@ func (m *Query) Migrate() (string, error) {
 
     dbColumnStrs := m.generateColumnStrings(dbColums)
 
-    createTableSql := fmt.Sprintf("create table IF NOT EXISTS  `%s` (%s)",
+    createTableSql := fmt.Sprintf("create table IF NOT EXISTS `%s` (%s)",
         m.tables[0].table.TableName(),
         strings.Join(dbColumnStrs, ","))
 
@@ -83,7 +85,13 @@ func (m *Query) generateColumnStrings(dbColums []dBColumn) []string {
         if v.AutoIncrement {
             words = append(words, "auto_increment")
         } else if v.Default != "" {
-            words = append(words, "default "+"'"+v.Default+"'")
+            if SliceContain(definedDefault, strings.ToLower(v.Default)) >= 0 {
+                words = append(words, "default "+v.Default)
+            } else {
+                words = append(words, "default "+"'"+v.Default+"'")
+            }
+        } else if v.Null == false {
+            words = append(words, "default ''")
         }
 
         //add comment
@@ -114,6 +122,13 @@ func (m *Query) generateColumnStrings(dbColums []dBColumn) []string {
     }
     if primaryStr != "" {
         ret = append(ret, primaryStr)
+    }
+    for _, v := range uniqueColumns {
+        ret = append(ret, v)
+    }
+
+    for _, v := range indexColumns {
+        ret = append(ret, v)
     }
     for k, v := range uniqueComps {
         ret = append(ret, fmt.Sprintf("unique key `%s` (%s)", k, strings.Join(v, ",")))
@@ -202,20 +217,44 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
                 switch columnKind {
                 case reflect.Bool, reflect.Int8:
                     column.Type = "tinyint"
+                    if column.Default == "" {
+                        column.Default = "0"
+                    }
                 case reflect.Int16:
-                    column.Type = "smallinit"
+                    column.Type = "smallint"
+                    if column.Default == "" {
+                        column.Default = "0"
+                    }
                 case reflect.Int, reflect.Int32:
                     column.Type = "int"
+                    if column.Default == "" {
+                        column.Default = "0"
+                    }
                 case reflect.Int64:
                     column.Type = "bigint"
+                    if column.Default == "" {
+                        column.Default = "0"
+                    }
                 case reflect.Uint8:
                     column.Type = "tinyint unsigned"
+                    if column.Default == "" {
+                        column.Default = "0"
+                    }
                 case reflect.Uint16:
-                    column.Type = "smallinit unsigned"
+                    column.Type = "smallint unsigned"
+                    if column.Default == "" {
+                        column.Default = "0"
+                    }
                 case reflect.Uint, reflect.Uint32:
                     column.Type = "int unsigned"
+                    if column.Default == "" {
+                        column.Default = "0"
+                    }
                 case reflect.Uint64:
                     column.Type = "bigint unsigned"
+                    if column.Default == "" {
+                        column.Default = "0"
+                    }
                 case reflect.String:
                     column.Type = "varchar(255)"
                 default:
