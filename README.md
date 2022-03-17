@@ -145,7 +145,7 @@ func main() {
 
 ## Relation (has many | belongs to)
 ```go
-    //an user has many orders
+    //each user has many orders
     func (*User) LoadOrders(users []User) {
         var userIds []int
         for _, v := range users {
