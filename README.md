@@ -53,6 +53,11 @@ func main() {
         UserTable.Query().Limit(5).Select(&data)
     }
     {
+        var data map[int][]User //select map[id][]user
+        UserTable.Query().Limit(5).Select(&data)
+        fmt.Println(data)
+    }
+    {
         var data map[int]string //select map[id]name
         UserTable.Query().Limit(5).Select(&data, &UserTable.Id, &UserTable.Name)
     }
@@ -137,6 +142,24 @@ func main() {
         //insert ingore into user (id) select id from user limit 5 on duplicate key update name="change selected users' name"
         UserTable.Query().InsertIgnore(subquery, []interface{}{&UserTable.Id}, orm.UpdateColumn{Column: &UserTable.Name, Val: "change selected users' name"})
     }
+```
+
+## Relation (has many | belongs to)
+```go
+    func (*User) LoadOrders(users []User) {
+        var userIds []int
+        for _, v := range users {
+            userIds = append(userIds, v.Id)
+        }
+        
+        var userOrders map[int][]Order
+        OrderTable.Query().Where(&OrderTable.UserId, orm.WhereIn, userIds).
+            Select(userOrders, &OrderTable.UserId, orm.AllCols)
+        
+        for k := range users {
+            users[k].Orders = userOrders[users[k].Id]
+        }
+    }   
 ```
 
 ## migrate (create table)
