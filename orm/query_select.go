@@ -211,6 +211,25 @@ func (m *Query) scanRows(dest interface{}, rows *sql.Rows) error {
                 newVal.SetMapIndex(reflect.ValueOf(baseAddrs[0]).Elem(), reflect.ValueOf(structAddr).Elem())
             }, false)
             base.Elem().Set(newVal)
+        case reflect.Slice:
+            structAddr := reflect.New(ele).Interface()
+            structAddrMap, err := getStructFieldAddrMap(structAddr)
+            if err != nil {
+                return err
+            }
+            var baseAddrs = make([]interface{}, len(rowColumns))
+
+            for k, v := range rowColumns {
+                baseAddrs[k] = structAddrMap[v]
+                if baseAddrs[k] == nil {
+                    var temp interface{}
+                    baseAddrs[k] = &temp
+                }
+            }
+            err = m.scanValues(baseAddrs, rowColumns, rows, func() {
+                newVal.SetMapIndex(reflect.ValueOf(baseAddrs[0]).Elem(), reflect.ValueOf(structAddr).Elem())
+            }, false)
+            base.Elem().Set(newVal)
         default:
             keyType := reflect.TypeOf(dest).Elem().Key()
 
