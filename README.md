@@ -55,7 +55,6 @@ func main() {
     {
         var data map[int][]User //select map[id][]user
         UserTable.Query().Limit(5).Select(&data)
-        fmt.Println(data)
     }
     {
         var data map[int]string //select map[id]name
