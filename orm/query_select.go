@@ -25,6 +25,9 @@ func (m *Query) SelectSliceOfStruct(dest interface{}, columns ...interface{}) Qu
 func (m *Query) SelectMapOfStructKeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
+func (m *Query) SelectMapOfStructSliceKeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
+    return m.Select(dest, columns...)
+}
 func (m *Query) SelectMapOfColumn2KeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }

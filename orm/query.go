@@ -129,7 +129,16 @@ func (m *Query) isStringOrRaw(v interface{}) (string, bool) {
 func (m *Query) parseColumn(v interface{}) (string, error) {
     columnVar := reflect.ValueOf(v)
     if columnVar.Kind() == reflect.String {
-        return columnVar.String(), nil
+        ret := columnVar.String()
+        if ret == "*" && len(m.tables) > 0 {
+            prefix := m.tables[0].getAliasOrTableName()
+            if prefix != "" {
+                prefix += "."
+            }
+            return prefix + ret, nil
+        } else {
+            return ret, nil
+        }
     } else if columnVar.Kind() == reflect.Ptr {
         table, column := m.getTableColumn(columnVar)
         if table == nil {
