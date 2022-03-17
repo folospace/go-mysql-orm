@@ -214,7 +214,7 @@ func (m *Query) scanRows(dest interface{}, rows *sql.Rows) error {
             base.Elem().Set(newVal)
         case reflect.Slice:
             if ele.Elem().Kind() != reflect.Struct {
-                return errors.New("map slice item only struct allow allowed")
+                return errors.New("map slice only struct item allowed")
             }
             structAddr := reflect.New(ele.Elem()).Interface()
             structAddrMap, err := getStructFieldAddrMap(structAddr)
