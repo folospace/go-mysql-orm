@@ -3,6 +3,7 @@ package orm
 import (
     "database/sql"
     "errors"
+    "fmt"
     "reflect"
     "strings"
 )
@@ -212,7 +213,10 @@ func (m *Query) scanRows(dest interface{}, rows *sql.Rows) error {
             }, false)
             base.Elem().Set(newVal)
         case reflect.Slice:
-            structAddr := reflect.New(ele).Interface()
+            if ele.Elem().Kind() != reflect.Struct {
+                return errors.New("map slice item only struct allow allowed")
+            }
+            structAddr := reflect.New(ele.Elem()).Interface()
             structAddrMap, err := getStructFieldAddrMap(structAddr)
             if err != nil {
                 return err
@@ -227,7 +231,12 @@ func (m *Query) scanRows(dest interface{}, rows *sql.Rows) error {
                 }
             }
             err = m.scanValues(baseAddrs, rowColumns, rows, func() {
-                newVal.SetMapIndex(reflect.ValueOf(baseAddrs[0]).Elem(), reflect.ValueOf(structAddr).Elem())
+                tempSlice := newVal.MapIndex(reflect.ValueOf(baseAddrs[0]).Elem())
+                if tempSlice.IsValid() == false {
+                    fmt.Println(111)
+                    tempSlice = reflect.MakeSlice(ele, 0, 0)
+                }
+                newVal.SetMapIndex(reflect.ValueOf(baseAddrs[0]).Elem(), reflect.Append(tempSlice, reflect.ValueOf(structAddr).Elem()))
             }, false)
             base.Elem().Set(newVal)
         default:
