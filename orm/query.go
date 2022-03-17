@@ -10,6 +10,8 @@ import (
 
 type Raw string
 
+var AllCols = "*"
+
 type Query struct {
     db        *sql.DB
     tx        *sql.Tx
