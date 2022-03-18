@@ -82,22 +82,33 @@ func (m *Query) parseTable(table Table) (*queryTable, error) {
         }
     } else {
         tableStructType := reflect.TypeOf(table).Elem()
-        jsonFields := make(map[interface{}]string)
+        ormFields := make(map[interface{}]string)
 
         for i := 0; i < tableStruct.NumField(); i++ {
             valueField := tableStruct.Field(i)
 
+            ormTag := strings.Split(tableStructType.Field(i).Tag.Get("orm"), ",")[0]
+            if ormTag == "-" {
+                continue
+            }
+            if ormTag != "" {
+                ormFields[valueField.Addr().Interface()] = ormTag
+                continue
+            }
+
             name := strings.Split(tableStructType.Field(i).Tag.Get("json"), ",")[0]
             if name == "-" {
-                name = ""
+                continue
             }
-            jsonFields[valueField.Addr().Interface()] = name
+            if name != "" {
+                ormFields[valueField.Addr().Interface()] = name
+            }
         }
         newTable = &queryTable{
             table:           table,
             tableStruct:     tableStruct,
             tableStructType: reflect.TypeOf(table).Elem(),
-            jsonFields:      jsonFields,
+            ormFields:       ormFields,
         }
     }
     return newTable, nil
@@ -161,7 +172,7 @@ func (m *Query) parseColumn(v interface{}) (string, error) {
 
 func (m *Query) getTableColumn(i reflect.Value) (*queryTable, string) {
     for _, t := range m.tables {
-        if s, exist := t.jsonFields[i.Elem().Addr().Interface()]; exist {
+        if s, exist := t.ormFields[i.Elem().Addr().Interface()]; exist {
             return t, s
         }
     }

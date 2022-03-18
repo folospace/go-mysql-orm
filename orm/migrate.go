@@ -40,7 +40,7 @@ func (m *Query) Migrate() (string, error) {
         return "", errors.New("no db exist")
     }
 
-    if len(m.tables) == 0 || len(m.tables[0].jsonFields) == 0 ||
+    if len(m.tables) == 0 || len(m.tables[0].ormFields) == 0 ||
         m.tables[0].table == nil || m.tables[0].table.TableName() == "" {
         return "", errors.New("no table exist")
     }
@@ -151,9 +151,18 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
 
         column := dBColumn{}
 
-        column.Name = table.getTags(i, "json")[0]
-        if column.Name == "" || column.Name == "-" {
+        ormTags := table.getTags(i, "orm")
+        if ormTags[0] == "-" {
             continue
+        }
+
+        if ormTags[0] != "" {
+            column.Name = ormTags[0]
+        } else {
+            column.Name = table.getTags(i, "json")[0]
+            if column.Name == "" || column.Name == "-" {
+                continue
+            }
         }
 
         columnKind := varField.Kind()
@@ -173,12 +182,12 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
         column.Comment = table.getTags(i, "comment")[0]
         column.Default = table.getTags(i, "default")[0]
 
-        ormTags := table.getTags(i, "orm")
-        if ormTags[0] == "-" {
-            continue
-        }
+
         if ormTags[0] != "" {
-            for _, v := range ormTags {
+            for k, v := range ormTags {
+                if k == 0 {
+                    continue
+                }
                 if v == nullPrefix {
                     column.Null = true
                 } else if v == autoIncrementPrefix {

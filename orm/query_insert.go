@@ -110,7 +110,7 @@ func (m *Query) insert(ignore bool, data interface{}, tableFieldAddrs []interfac
     for _, v := range tableFieldAddrs {
         allowFields[v] = struct{}{}
     }
-    for k, v := range m.tables[0].jsonFields {
+    for k, v := range m.tables[0].ormFields {
         _, ok := allowFields[k]
         if ok || (len(allowFields) == 0 && isSubQuery == false) {
             validFieldNameMap[v] = struct{}{}

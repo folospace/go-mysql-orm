@@ -17,7 +17,7 @@ type queryTable struct {
     table           Table
     tableStruct     reflect.Value
     tableStructType reflect.Type
-    jsonFields      map[interface{}]string
+    ormFields       map[interface{}]string
     joinType        JoinType //(left|right) join
     joinCondition   where
     alias           string
