@@ -163,6 +163,7 @@ func main() {
 ```
 
 ## migrate (create table)
+- orm tag will override json tag
 ```go
     type User struct {
             Id int `json:"id"`
