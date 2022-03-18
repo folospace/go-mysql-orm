@@ -5,6 +5,7 @@ import (
     "fmt"
     "reflect"
     "strings"
+    "time"
 )
 
 const primaryKeyPrefix = "primary"
@@ -151,7 +152,7 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
         column := dBColumn{}
 
         column.Name = table.getTags(i, "json")[0]
-        if column.Name == "" {
+        if column.Name == "" || column.Name == "-" {
             continue
         }
 
@@ -173,6 +174,9 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
         column.Default = table.getTags(i, "default")[0]
 
         ormTags := table.getTags(i, "orm")
+        if ormTags[0] == "-" {
+            continue
+        }
         if ormTags[0] != "" {
             for _, v := range ormTags {
                 if v == nullPrefix {
@@ -257,6 +261,14 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
                     }
                 case reflect.String:
                     column.Type = "varchar(255)"
+                case reflect.Struct:
+                    if _, ok := varField.Interface().(time.Time); ok {
+                        column.Type = "timestamp"
+                    } else if _, ok := varField.Interface().(*time.Time); ok {
+                        column.Type = "timestamp"
+                    } else {
+                        column.Type = "varchar(255)"
+                    }
                 default:
                     column.Type = "varchar(255)"
                 }
