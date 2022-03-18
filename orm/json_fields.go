@@ -69,6 +69,16 @@ func getStructFieldAddrMap(objAddr interface{}) (map[string]interface{}, error) 
 	for i := 0; i < tableStruct.NumField(); i++ {
 		valueField := tableStruct.Field(i)
 
+		ormTag := strings.Split(tableStructType.Field(i).Tag.Get("orm"), ",")[0]
+		if ormTag == "-" {
+			continue
+		}
+
+		if ormTag != "" {
+			ret[ormTag] = valueField.Addr().Interface()
+			continue
+		}
+
 		name := strings.Split(tableStructType.Field(i).Tag.Get("json"), ",")[0]
 		if name == "-" {
 			name = ""
