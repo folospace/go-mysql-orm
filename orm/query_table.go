@@ -62,8 +62,5 @@ func (q queryTable) getTableName() string {
 
 func (q queryTable) getTags(index int, tagName string) []string {
     tags := strings.Split(q.tableStructType.Field(index).Tag.Get(tagName), ",")
-    if tags[0] == "-" {
-        tags[0] = ""
-    }
     return tags
 }
