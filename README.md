@@ -165,6 +165,7 @@ func main() {
 ## migrate (create table)
 - use json tag by default
 - orm tag will override json tag
+- default: column default value; comment: column comment 
 ```go
     type User struct {
             Id int `json:"id"`
