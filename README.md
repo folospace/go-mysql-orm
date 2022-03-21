@@ -175,14 +175,16 @@ func main() {
             UpdatedAt orm.JsonTime `json:"updated_at"`
     }
     createTableSql, err := UserTable.Query().Migrate()
-    //create table IF NOT EXISTS `user` (`id` int not null auto_increment,
-    //`email` varchar(64) null comment 'user email',
-    //`score` int not null default '0' comment 'user score',
-    //`name` varchar(255) not null default 'john' comment 'user name',
-    //`created_at` timestamp not null default CURRENT_TIMESTAMP,
-    //`updated_at` timestamp not null default CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    //primary key (`id`),
-    //unique key `email` (`email`),
-    //key `score` (`score`),
-    //key `index_email_and_score` (`email`,`score`)) 
+    //create table IF NOT EXISTS `user` (
+        //`id` int not null auto_increment,
+        //`email` varchar(64) null comment 'user email',
+        //`score` int not null default '0' comment 'user score',
+        //`name` varchar(255) not null default 'john' comment 'user name',
+        //`created_at` timestamp not null default CURRENT_TIMESTAMP,
+        //`updated_at` timestamp not null default CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        //primary key (`id`),
+        //unique key `email` (`email`),
+        //key `score` (`score`),
+        //key `index_email_and_score` (`email`,`score`)
+    //) 
 ```
