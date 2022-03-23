@@ -247,6 +247,10 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
             column.Default = "'" + column.Default + "'"
         }
 
+        if column.Null == false && strings.ToLower(customDefault) == "null" {
+            column.Default = ""
+        }
+
         ret = append(ret, column)
     }
 
