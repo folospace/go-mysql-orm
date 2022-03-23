@@ -86,13 +86,7 @@ func (m *Query) generateColumnStrings(dbColums []dBColumn) []string {
         if v.AutoIncrement {
             words = append(words, "auto_increment")
         } else if v.Default != "" {
-            if SliceContain(definedDefault, strings.ToLower(v.Default)) >= 0 {
-                words = append(words, "default "+v.Default)
-            } else {
-                words = append(words, "default "+"'"+v.Default+"'")
-            }
-        } else if v.Null == false {
-            words = append(words, "default ''")
+            words = append(words, "default "+v.Default)
         }
 
         //add comment
@@ -152,48 +146,65 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
         column := dBColumn{}
 
         ormTags := table.getTags(i, "orm")
-        if ormTags[0] == "-" {
-            continue
-        }
-
         if ormTags[0] != "" {
             column.Name = ormTags[0]
         } else {
             column.Name = table.getTags(i, "json")[0]
-            if column.Name == "" || column.Name == "-" {
-                continue
-            }
         }
 
-        columnKind := varField.Kind()
+        if column.Name == "" || column.Name == "-" {
+            continue
+        }
+
+        columnField := varField
         if varField.Kind() == reflect.Ptr {
-            column.Null = true
-            columnKind = varField.Elem().Kind()
             if varField.Elem().Kind() == reflect.Ptr {
                 continue
             }
+            column.Null = true
+            columnField = varField.Elem()
         }
 
+        column.Type, column.Default = m.getTypeAndDefault(columnField)
+
         if i == 0 {
-            column.AutoIncrement = true
             column.Primary = true
+            if column.Default == "0" {
+                column.AutoIncrement = true
+            }
+        }
+
+        if column.Name == createdAtColumn {
+            column.Type = "timestamp"
+            column.Default = "CURRENT_TIMESTAMP"
+        } else if column.Name == updatedAtColumn {
+            column.Type = "timestamp"
+            column.Default = "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        } else if column.Name == deletedAtColumn {
+            column.Null = true
+            column.Type = "timestamp"
+            column.Default = "Null"
         }
 
         column.Comment = table.getTags(i, "comment")[0]
-        column.Default = table.getTags(i, "default")[0]
-
+        customDefault := table.getTags(i, "default")[0]
+        if customDefault != "" {
+            column.Default = customDefault
+        }
 
         if ormTags[0] != "" {
+            overideColumn := dBColumn{}
+
             for k, v := range ormTags {
                 if k == 0 {
                     continue
                 }
                 if v == nullPrefix {
-                    column.Null = true
+                    overideColumn.Null = true
                 } else if v == autoIncrementPrefix {
-                    column.AutoIncrement = true
+                    overideColumn.AutoIncrement = true
                 } else if strings.HasPrefix(v, primaryKeyPrefix) {
-                    column.Primary = true
+                    overideColumn.Primary = true
                 } else if strings.HasPrefix(v, uniqueKeyPrefix) {
                     if v == uniqueKeyPrefix {
                         column.Unique = true
@@ -207,84 +218,67 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
                         column.Indexs = append(column.Indexs, v)
                     }
                 } else {
-                    column.Type = v
+                    overideColumn.Type = v
                 }
             }
-        }
-        if column.Type == "" {
-            if column.Name == createdAtColumn {
-                column.Type = "timestamp"
-                if column.Default == "" {
-                    column.Default = "CURRENT_TIMESTAMP"
-                }
-            } else if column.Name == updatedAtColumn {
-                column.Type = "timestamp"
-                if column.Default == "" {
-                    column.Default = "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-                }
-            } else if column.Name == deletedAtColumn {
-                column.Type = "timestamp"
-                column.Null = true
-                column.Default = "Null"
-            } else {
-                switch columnKind {
-                case reflect.Bool, reflect.Int8:
-                    column.Type = "tinyint"
-                    if column.Default == "" {
-                        column.Default = "0"
-                    }
-                case reflect.Int16:
-                    column.Type = "smallint"
-                    if column.Default == "" {
-                        column.Default = "0"
-                    }
-                case reflect.Int, reflect.Int32:
-                    column.Type = "int"
-                    if column.Default == "" {
-                        column.Default = "0"
-                    }
-                case reflect.Int64:
-                    column.Type = "bigint"
-                    if column.Default == "" {
-                        column.Default = "0"
-                    }
-                case reflect.Uint8:
-                    column.Type = "tinyint unsigned"
-                    if column.Default == "" {
-                        column.Default = "0"
-                    }
-                case reflect.Uint16:
-                    column.Type = "smallint unsigned"
-                    if column.Default == "" {
-                        column.Default = "0"
-                    }
-                case reflect.Uint, reflect.Uint32:
-                    column.Type = "int unsigned"
-                    if column.Default == "" {
-                        column.Default = "0"
-                    }
-                case reflect.Uint64:
-                    column.Type = "bigint unsigned"
-                    if column.Default == "" {
-                        column.Default = "0"
-                    }
-                case reflect.String:
-                    column.Type = "varchar(255)"
-                case reflect.Struct:
-                    if _, ok := varField.Interface().(time.Time); ok {
-                        column.Type = "timestamp"
-                    } else if _, ok := varField.Interface().(*time.Time); ok {
-                        column.Type = "timestamp"
-                    } else {
-                        column.Type = "varchar(255)"
-                    }
-                default:
-                    column.Type = "varchar(255)"
-                }
+
+            column.Null = overideColumn.Null
+            column.AutoIncrement = overideColumn.AutoIncrement
+            column.Primary = overideColumn.Primary
+            if overideColumn.Type != "" {
+                column.Type = overideColumn.Type
             }
         }
+
+        if column.Default == "" && column.Null {
+            column.Default = "null"
+        }
+
+        if column.Default == "" || SliceContain(definedDefault, strings.ToLower(column.Default)) < 0 {
+            column.Default = "'" + column.Default + "'"
+        }
+
         ret = append(ret, column)
     }
 
     return ret
+}
+
+func (m *Query) getTypeAndDefault(val reflect.Value) (string, string) {
+    var types, defaults string
+    switch val.Kind() {
+    case reflect.Bool, reflect.Int8:
+        types = "tinyint"
+        defaults = "0"
+    case reflect.Int16:
+        types = "smallint"
+        defaults = "0"
+    case reflect.Int, reflect.Int32:
+        types = "int"
+        defaults = "0"
+    case reflect.Int64:
+        types = "bigint"
+        defaults = "0"
+    case reflect.Uint8:
+        types = "tinyint unsigned"
+        defaults = "0"
+    case reflect.Uint16:
+        types = "smallint unsigned"
+        defaults = "0"
+    case reflect.Uint, reflect.Uint32:
+        types = "int unsigned"
+        defaults = "0"
+    case reflect.Uint64:
+        types = "bigint unsigned"
+        defaults = "0"
+    case reflect.String:
+        types = "varchar(255)"
+    default:
+        if _, ok := val.Interface().(time.Time); ok {
+            types = "timestamp"
+        } else {
+            types = "varchar(255)"
+        }
+    }
+    return types, defaults
 }
