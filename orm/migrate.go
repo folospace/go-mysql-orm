@@ -156,16 +156,16 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
             continue
         }
 
-        columnField := varField
+        kind := varField.Kind()
         if varField.Kind() == reflect.Ptr {
+            kind := varField.Elem().Kind()
             if varField.Elem().Kind() == reflect.Ptr {
                 continue
             }
             column.Null = true
-            columnField = varField.Elem()
         }
 
-        column.Type, column.Default = m.getTypeAndDefault(columnField)
+        column.Type, column.Default = m.getTypeAndDefault(varField)
 
         if i == 0 {
             column.Primary = true
@@ -190,6 +190,13 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
         customDefault := table.getTags(i, "default")[0]
         if customDefault != "" {
             column.Default = customDefault
+            if kind == reflect.Bool {
+                if strings.ToLower(customDefault) == "true" {
+                    column.Default = "1"
+                } else if strings.ToLower(customDefault) == "false" {
+                    column.Default = "0"
+                }
+            }
         }
 
         if ormTags[0] != "" {
@@ -246,7 +253,11 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
 
 func (m *Query) getTypeAndDefault(val reflect.Value) (string, string) {
     var types, defaults string
-    switch val.Kind() {
+    kind := val.Kind()
+    if kind == reflect.Ptr {
+        kind = val.Elem().Kind()
+    }
+    switch kind {
     case reflect.Bool, reflect.Int8:
         types = "tinyint"
         defaults = "0"
@@ -274,7 +285,9 @@ func (m *Query) getTypeAndDefault(val reflect.Value) (string, string) {
     case reflect.String:
         types = "varchar(255)"
     default:
-        if _, ok := val.Interface().(time.Time); ok {
+        if _, ok := val.Interface().(*time.Time); ok {
+            types = "timestamp"
+        } else if _, ok := val.Interface().(time.Time); ok {
             types = "timestamp"
         } else {
             types = "varchar(255)"
