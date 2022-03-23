@@ -158,7 +158,7 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
 
         kind := varField.Kind()
         if varField.Kind() == reflect.Ptr {
-            kind := varField.Elem().Kind()
+            kind = varField.Elem().Kind()
             if varField.Elem().Kind() == reflect.Ptr {
                 continue
             }
