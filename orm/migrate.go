@@ -237,8 +237,10 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
             }
         }
 
-        if column.Default == "" && column.Null {
-            column.Default = "null"
+        if column.Null {
+            if customDefault == "" {
+                column.Default = "null"
+            }
         }
 
         if column.Default == "" || SliceContain(definedDefault, strings.ToLower(column.Default)) < 0 {
