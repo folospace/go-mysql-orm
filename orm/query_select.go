@@ -3,7 +3,6 @@ package orm
 import (
     "database/sql"
     "errors"
-    "fmt"
     "reflect"
     "strings"
 )
@@ -231,12 +230,12 @@ func (m *Query) scanRows(dest interface{}, rows *sql.Rows) error {
                 }
             }
             err = m.scanValues(baseAddrs, rowColumns, rows, func() {
-                tempSlice := newVal.MapIndex(reflect.ValueOf(baseAddrs[0]).Elem())
+                index := reflect.ValueOf(baseAddrs[0]).Elem()
+                tempSlice := newVal.MapIndex(index)
                 if tempSlice.IsValid() == false {
-                    fmt.Println(111)
                     tempSlice = reflect.MakeSlice(ele, 0, 0)
                 }
-                newVal.SetMapIndex(reflect.ValueOf(baseAddrs[0]).Elem(), reflect.Append(tempSlice, reflect.ValueOf(structAddr).Elem()))
+                newVal.SetMapIndex(index, reflect.Append(tempSlice, reflect.ValueOf(structAddr).Elem()))
             }, false)
             base.Elem().Set(newVal)
         default:
