@@ -62,6 +62,10 @@ func (m *Query) FromTable(table Table, alias ...string) *Query {
 }
 
 func (m *Query) parseTable(table Table) (*queryTable, error) {
+    cached := getTableFromCache(table)
+    if cached != nil {
+        return cached, nil
+    }
     tableStructAddr := reflect.ValueOf(table)
     if tableStructAddr.Kind() != reflect.Ptr {
         return nil, errors.New("params must be address of variable")
@@ -110,6 +114,7 @@ func (m *Query) parseTable(table Table) (*queryTable, error) {
             tableStructType: reflect.TypeOf(table).Elem(),
             ormFields:       ormFields,
         }
+        cacheTable(table, newTable)
     }
     return newTable, nil
 }
