@@ -172,8 +172,8 @@ func main() {
             Email string `json:"email" orm:"email,varchar(64),null,unique,index_email_and_score" comment:"user email"`
             Score int `json:"score" orm:"score,index,index_email_and_score" comment:"user score"`
             Name string `json:"name" default:"john" comment:"user name"`
-            CreatedAt orm.JsonTime `json:"created_at"`
-            UpdatedAt orm.JsonTime `json:"updated_at"`
+            CreatedAt time.Time `json:"created_at"`
+            UpdatedAt time.Time `json:"updated_at"`
     }
     createTableSql, err := UserTable.Query().Migrate()
     //create table IF NOT EXISTS `user` (
