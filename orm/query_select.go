@@ -31,6 +31,43 @@ func (m *Query) SelectMapOfStructSliceKeyByColumn1(dest interface{}, columns ...
 func (m *Query) SelectMapOfColumn2KeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
+func (m *Query) SelectMapStr2Interface(dest interface{}, columns ...interface{}) QueryResult {
+    return m.Select(dest, columns...)
+}
+func (m *Query) SelectSliceOfMapStr2Interface(dest interface{}, columns ...interface{}) QueryResult {
+    return m.Select(dest, columns...)
+}
+func (m *Query) SelectFromSql(dest interface{}, prepareSql string, bindings ...interface{}) QueryResult {
+    m.result.PrepareSql = prepareSql
+    m.result.Bindings = bindings
+
+    if m.result.Err != nil {
+        return m.result
+    }
+
+    var rows *sql.Rows
+    var err error
+    if m.dbTx() != nil {
+        rows, err = m.dbTx().Query(prepareSql, bindings...)
+    } else {
+        rows, err = m.DB().Query(prepareSql, bindings...)
+    }
+
+    defer func() {
+        if rows != nil {
+            _ = rows.Close()
+        }
+    }()
+
+    if err != nil {
+        m.result.Err = err
+        return m.result
+    }
+
+    m.result.Err = m.scanRows(dest, rows)
+    return m.result
+}
+
 func (m *Query) SelectSub(columns ...interface{}) *tempTable {
     tempTable := m.generateSelectQuery(columns...)
 
@@ -238,6 +275,26 @@ func (m *Query) scanRows(dest interface{}, rows *sql.Rows) error {
                 newVal.SetMapIndex(index, reflect.Append(tempSlice, reflect.ValueOf(structAddr).Elem()))
             }, false)
             base.Elem().Set(newVal)
+
+        case reflect.Interface:
+            if reflect.TypeOf(dest).Elem().Key().Kind() == reflect.String {
+
+                var baseAddrs = make([]interface{}, len(rowColumns))
+                for k := range baseAddrs {
+                    var temp interface{}
+                    baseAddrs[k] = &temp
+                }
+
+                err = m.scanValues(baseAddrs, rowColumns, rows, func() {
+                    for k, v := range rowColumns {
+                        newVal.SetMapIndex(reflect.ValueOf(v), reflect.ValueOf(baseAddrs[k]).Elem())
+                    }
+                }, true)
+
+                base.Elem().Set(newVal)
+                return err
+            }
+            fallthrough
         default:
             keyType := reflect.TypeOf(dest).Elem().Key()
 
@@ -303,6 +360,22 @@ func (m *Query) scanRows(dest interface{}, rows *sql.Rows) error {
 
             err = m.scanValues(baseAddrs, rowColumns, rows, func() {
                 val = reflect.Append(val, reflect.ValueOf(structAddr).Elem())
+            }, false)
+
+            base.Elem().Set(val)
+        case reflect.Map:
+            var baseAddrs = make([]interface{}, len(rowColumns))
+
+            for k := range baseAddrs {
+                var temp interface{}
+                baseAddrs[k] = &temp
+            }
+            err = m.scanValues(baseAddrs, rowColumns, rows, func() {
+                newVal := reflect.MakeMap(ele)
+                for k, v := range rowColumns {
+                    newVal.SetMapIndex(reflect.ValueOf(v), reflect.ValueOf(baseAddrs[k]).Elem())
+                }
+                val = reflect.Append(val, newVal)
             }, false)
 
             base.Elem().Set(val)
