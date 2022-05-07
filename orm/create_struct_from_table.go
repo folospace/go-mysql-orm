@@ -8,6 +8,7 @@ import (
     "reflect"
     "regexp"
     "strings"
+    "time"
 )
 
 var findCommentRegex = regexp.MustCompile("(.+) COMMENT '(.+)'")
@@ -87,7 +88,7 @@ func CreateStructFromTable(table Table) error {
     structName := structNameSrc[len(structNameSrc)-1]
 
     search := "type " + structName + " struct {"
-    oldStructRename := "type " + structName + "Old struct {"
+    oldStructRename := "type " + structName +"_"+ time.Now().Format("2006_01_02_15_04_05") + " struct {"
 
     fileParts := strings.SplitN(fileContent, search, 2)
 
