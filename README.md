@@ -180,7 +180,7 @@ func main() {
 }        
 ```
 
-#### details of migration 
+#### details about migration 
 - use json tag by default
 - orm tag will override json tag
 - default: column default value
