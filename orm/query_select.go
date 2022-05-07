@@ -37,7 +37,7 @@ func (m *Query) SelectMapStr2Interface(dest interface{}, columns ...interface{})
 func (m *Query) SelectSliceOfMapStr2Interface(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
-func (m *Query) SelectFromSql(dest interface{}, prepareSql string, bindings ...interface{}) QueryResult {
+func (m *Query) SelectRaw(dest interface{}, prepareSql string, bindings ...interface{}) QueryResult {
     m.result.PrepareSql = prepareSql
     m.result.Bindings = bindings
 

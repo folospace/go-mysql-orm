@@ -34,33 +34,34 @@ type dBColumn struct {
     Uniques []string //composite unique index names
 }
 
-func (m *Query) Migrate() (string, error) {
-    db := m.DB()
+func CreateTableFromStruct(table Table) (string, error) {
+    originQuery := table.Query()
+    db := originQuery.DB()
     if db == nil {
         return "", errors.New("no db exist")
     }
 
-    if len(m.tables) == 0 || len(m.tables[0].ormFields) == 0 ||
-        m.tables[0].table == nil || m.tables[0].table.TableName() == "" {
+    if len(originQuery.tables) == 0 || len(originQuery.tables[0].ormFields) == 0 ||
+        originQuery.tables[0].table == nil || originQuery.tables[0].table.TableName() == "" {
         return "", errors.New("no table exist")
     }
 
-    dbColums := m.getMigrateColumns(m.tables[0])
+    dbColums := getMigrateColumns(originQuery.tables[0])
     if len(dbColums) == 0 {
         return "", errors.New("no column exist")
     }
 
-    dbColumnStrs := m.generateColumnStrings(dbColums)
+    dbColumnStrs := generateColumnStrings(dbColums)
 
     createTableSql := fmt.Sprintf("create table IF NOT EXISTS `%s` (%s)",
-        m.tables[0].table.TableName(),
+        originQuery.tables[0].table.TableName(),
         strings.Join(dbColumnStrs, ","))
 
     _, err := db.Exec(createTableSql)
     return createTableSql, err
 }
 
-func (m *Query) generateColumnStrings(dbColums []dBColumn) []string {
+func generateColumnStrings(dbColums []dBColumn) []string {
     var ret []string
     var primaryStr string
     var uniqueColumns []string
@@ -134,7 +135,7 @@ func (m *Query) generateColumnStrings(dbColums []dBColumn) []string {
     return ret
 }
 
-func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
+func getMigrateColumns(table *queryTable) []dBColumn {
     var ret []dBColumn
     for i := 0; i < table.tableStruct.NumField(); i++ {
         varField := table.tableStruct.Field(i)
@@ -165,7 +166,7 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
             column.Null = true
         }
 
-        column.Type, column.Default = m.getTypeAndDefault(varField)
+        column.Type, column.Default = getTypeAndDefault(varField)
 
         if i == 0 {
             column.Primary = true
@@ -257,7 +258,7 @@ func (m *Query) getMigrateColumns(table *queryTable) []dBColumn {
     return ret
 }
 
-func (m *Query) getTypeAndDefault(val reflect.Value) (string, string) {
+func getTypeAndDefault(val reflect.Value) (string, string) {
     var types, defaults string
     kind := val.Kind()
     if kind == reflect.Ptr {
