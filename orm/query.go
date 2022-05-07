@@ -4,6 +4,7 @@ import (
     "database/sql"
     "errors"
     "reflect"
+    "runtime"
     "strconv"
     "strings"
 )
@@ -250,4 +251,9 @@ func (m *Query) getOrderAndLimitSqlStr() string {
     }
 
     return ret
+}
+
+func (m *Query) currentFilename() string {
+    _, fs, _, _ := runtime.Caller(2)
+    return fs
 }
