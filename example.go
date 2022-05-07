@@ -85,6 +85,16 @@ func main() {
         UserTable.Query().Limit(5).Select(&data, &UserTable.Id, &UserTable.Name)
         fmt.Println(data)
     }
+    {
+        var data []map[string]interface{} //select []map[column_name]column_value
+        UserTable.Query().Limit(5).Select(&data)
+        fmt.Println(data)
+    }
+    {
+        var data map[string]interface{} //select map[column_name]column_value
+        UserTable.Query().Limit(5).SelectRaw(&data, "show create table " + UserTable.TableName())
+        fmt.Println(data)
+    }
 
     //query where
     {
@@ -150,5 +160,9 @@ func main() {
 
         //insert ingore into user (id) select id from user limit 5 on duplicate key update name="change selected users' name"
         UserTable.Query().InsertIgnore(subquery, []interface{}{&UserTable.Id}, orm.UpdateColumn{Column: &UserTable.Name, Val: "change selected users' name"})
+    }
+    {
+        orm.CreateTableFromStruct(UserTable)
+        orm.CreateStructFromTable(UserTable)
     }
 }
