@@ -60,6 +60,16 @@ func main() {
         var data map[int]string //select map[id]name
         UserTable.Query().Limit(5).Select(&data, &UserTable.Id, &UserTable.Name)
     }
+    {
+        var data []map[string]interface{} //select []map[column_name]column_value
+        UserTable.Query().Limit(5).Select(&data)
+        fmt.Println(data)
+    }
+    {
+        var data map[string]interface{} //select map[column_name]column_value
+        UserTable.Query().Limit(5).SelectRaw(&data, "show create table " + UserTable.TableName())
+        fmt.Println(data)
+    }
 }
 ```
 ## update query
@@ -162,7 +172,15 @@ func main() {
     }   
 ```
 
-## migrate (create table)
+## migrate (create table from struct  | create struct from table)
+```go
+func main() {
+    orm.CreateTableFromStruct(UserTable) //create db table
+    orm.CreateStructFromTable(UserTable) //create struct fields in code
+}        
+```
+
+#### details of migration 
 - use json tag by default
 - orm tag will override json tag
 - default: column default value
@@ -178,7 +196,6 @@ func main() {
             CreatedAt time.Time `json:"created_at"`
             UpdatedAt time.Time `json:"updated_at"`
     }
-    createTableSql, err := UserTable.Query().Migrate()
     //create table IF NOT EXISTS `user` (
         //`id` int not null auto_increment,
         //`email` varchar(64) null comment 'user email',
