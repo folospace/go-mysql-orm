@@ -31,10 +31,10 @@ func (m *Query) SelectMapOfStructSliceKeyByColumn1(dest interface{}, columns ...
 func (m *Query) SelectMapOfColumn2KeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
-func (m *Query) SelectMapStr2Interface(dest interface{}, columns ...interface{}) QueryResult {
+func (m *Query) SelectMapStr2Interface(dest *map[string]interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
-func (m *Query) SelectSliceOfMapStr2Interface(dest interface{}, columns ...interface{}) QueryResult {
+func (m *Query) SelectSliceOfMapStr2Interface(dest *[]map[string]interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
 func (m *Query) SelectRaw(dest interface{}, prepareSql string, bindings ...interface{}) QueryResult {
