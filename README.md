@@ -175,7 +175,7 @@ func main() {
 ## migrate (create table from struct  | create struct from table)
 ```go
 func main() {
-    orm.CreateTableFromStruct(UserTable) //create db table
+    orm.CreateTableFromStruct(UserTable) //create db table, add new columns if table already exist.
     orm.CreateStructFromTable(UserTable) //create struct fields in code
 }        
 ```
