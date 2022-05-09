@@ -53,12 +53,62 @@ func CreateTableFromStruct(table Table) (string, error) {
 
     dbColumnStrs := generateColumnStrings(dbColums)
 
-    createTableSql := fmt.Sprintf("create table IF NOT EXISTS `%s` (%s)",
-        originQuery.tables[0].table.TableName(),
-        strings.Join(dbColumnStrs, ","))
+    originColumnStrs, _ := getSqlSegments(table)
 
-    _, err := db.Exec(createTableSql)
-    return createTableSql, err
+    if len(originColumnStrs) > 0 {
+        extraStrs := getTableNewColumns(originColumnStrs, dbColumnStrs)
+        retSql := ""
+        var err error
+        for _, v := range extraStrs {
+            tempSql := "ALTER TABLE " + table.TableName() + " ADD " + v
+
+            retSql += tempSql + "\n"
+            _, err = db.Exec(tempSql)
+            if err != nil {
+                break
+            }
+        }
+        return retSql, err
+    } else {
+        createTableSql := fmt.Sprintf("create table IF NOT EXISTS `%s` (%s)",
+            originQuery.tables[0].table.TableName(),
+            strings.Join(dbColumnStrs, ","))
+
+        _, err := db.Exec(createTableSql)
+        return createTableSql, err
+
+    }
+}
+
+func getTableNewColumns(origin, current []string) []string {
+    var exist = make(map[string]bool)
+    for _, v := range origin {
+        v := strings.Trim(v, " ")
+        if strings.HasPrefix(v, "`") {
+            tempStrs := strings.SplitN(v, " ", 2)
+            exist[strings.ToLower(tempStrs[0])] = true
+        } else {
+            tempStrs := strings.SplitN(v, " (", 2)
+            exist[strings.ToLower(tempStrs[0])] = true
+        }
+    }
+
+    var ret []string
+    for _, v := range current {
+        if strings.HasPrefix(v, "`") {
+            tempStrs := strings.SplitN(v, " ", 2)
+            if exist[strings.ToLower(tempStrs[0])] == false {
+                ret = append(ret, v)
+            }
+        } else {
+            tempStrs := strings.SplitN(v, " (", 2)
+            if exist[strings.ToLower(tempStrs[0])] == false {
+                ret = append(ret, v)
+            }
+        }
+    }
+
+    return ret
 }
 
 func generateColumnStrings(dbColums []dBColumn) []string {

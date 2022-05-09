@@ -122,7 +122,7 @@ func getStructFieldTypeStringByDBType(dbType string) string {
     return "string"
 }
 
-func getTableDbColumns(table Table) ([]dBColumn, error) {
+func getSqlSegments(table Table) ([]string, error) {
     var res map[string]string
     err := table.Query().SelectRaw(&res, "show create table "+table.TableName()).Err
 
@@ -141,6 +141,14 @@ func getTableDbColumns(table Table) ([]dBColumn, error) {
         return nil, errors.New(createTableSql)
     }
     sqlSegments = sqlSegments[1 : len(sqlSegments)-1]
+    return sqlSegments, nil
+}
+
+func getTableDbColumns(table Table) ([]dBColumn, error) {
+    sqlSegments, err := getSqlSegments(table)
+    if err != nil {
+        return nil, err
+    }
 
     ret := make([]dBColumn, 0)
     existColumn := make(map[string]int)
