@@ -27,12 +27,7 @@ func CreateStructFromTable(table Table) error {
     var structLines []string
     for _, v := range dbColumns {
         structFieldName := stringy.New(v.Name).CamelCase()
-        sturctFieldType := "string"
-        if strings.Contains(v.Type, "int") {
-            sturctFieldType = "int"
-        } else if strings.Contains(v.Type, "timestamp") || strings.Contains(v.Type, "datetime") {
-            sturctFieldType = "time.Time"
-        }
+        sturctFieldType := getStructFieldTypeStringByDBType(v.Type)
 
         var structFieldTags []string
         structFieldTags = append(structFieldTags, fmt.Sprintf("json:\"%s\"", v.Name))
@@ -88,13 +83,43 @@ func CreateStructFromTable(table Table) error {
     structName := structNameSrc[len(structNameSrc)-1]
 
     search := "type " + structName + " struct {"
-    oldStructRename := "type " + structName +"_"+ time.Now().Format("2006_01_02_15_04_05") + " struct {"
+    oldStructRename := "type " + structName + "_" + time.Now().Format("2006_01_02_15_04_05") + " struct {"
 
     fileParts := strings.SplitN(fileContent, search, 2)
 
     finalFileContent := fileParts[0] + search + "\n" + strings.Join(structLines, "\n") + "\n}\n" + oldStructRename + fileParts[1]
 
     return ioutil.WriteFile(structFile, []byte(finalFileContent), 0644)
+}
+
+func getStructFieldTypeStringByDBType(dbType string) string {
+    if strings.Contains(dbType, "char") || strings.Contains(dbType, "text") {
+        return "string"
+    }
+    if strings.Contains(dbType, "int") {
+        if strings.Contains(dbType, "unsigned") {
+            if strings.HasPrefix(dbType, "tiny") {
+                return "uint8"
+            } else if strings.HasPrefix(dbType, "big") {
+                return "uint64"
+            } else {
+                return "uint"
+            }
+        } else {
+            if strings.HasPrefix(dbType, "tiny") {
+                return "int8"
+            } else if strings.HasPrefix(dbType, "big") {
+                return "int64"
+            } else {
+                return "int"
+            }
+        }
+    } else if strings.Contains(dbType, "float") || strings.Contains(dbType, "double") || strings.Contains(dbType, "decimal") {
+        return "float64"
+    } else if strings.Contains(dbType, "time") || strings.Contains(dbType, "date") {
+        return "time.Time"
+    }
+    return "string"
 }
 
 func getTableDbColumns(table Table) ([]dBColumn, error) {
