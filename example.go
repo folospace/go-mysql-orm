@@ -92,7 +92,7 @@ func main() {
     }
     {
         var data map[string]interface{} //select map[column_name]column_value
-        UserTable.Query().Limit(5).SelectRaw(&data, "show create table " + UserTable.TableName())
+        UserTable.Query().SelectRaw(&data, "show create table " + UserTable.TableName())
         fmt.Println(data)
     }
 
