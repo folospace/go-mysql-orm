@@ -7,36 +7,57 @@ import (
     "strings"
 )
 
+//dest: *int | *int64 | ...
 func (m *Query) SelectCount(dest interface{}) QueryResult {
     return m.Select(dest, "count(*)")
 }
+
+//dest: *int | *string | ...
 func (m *Query) SelectValueOfFirstCell(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
+
+//dest: *[]int | *[]string | ...
 func (m *Query) SelectSliceOfColumn1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
+
+//dest: *struct
 func (m *Query) SelectStructOfRow1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
+
+//dest: *[]struct
 func (m *Query) SelectSliceOfStruct(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
+
+//dest: *map [int | string | ...] struct
 func (m *Query) SelectMapOfStructKeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
+
+//dest: *map [int | string | ...] []struct
 func (m *Query) SelectMapOfStructSliceKeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
+
+//dest: *map [int | string | ...] int | string ...
 func (m *Query) SelectMapOfColumn2KeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
+
+//dest, first of sql rows: *map[column_name]column_value
 func (m *Query) SelectMapStr2Interface(dest *map[string]interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
+
+//dest, sql rows: *[]map[column_name]column_value
 func (m *Query) SelectSliceOfMapStr2Interface(dest *[]map[string]interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
+
+//select from raw sql
 func (m *Query) SelectRaw(dest interface{}, prepareSql string, bindings ...interface{}) QueryResult {
     m.result.PrepareSql = prepareSql
     m.result.Bindings = bindings
