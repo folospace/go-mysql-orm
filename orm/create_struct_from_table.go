@@ -28,6 +28,9 @@ func CreateStructFromTable(table Table) error {
     for _, v := range dbColumns {
         structFieldName := stringy.New(v.Name).CamelCase()
         sturctFieldType := getStructFieldTypeStringByDBType(v.Type)
+        if v.Null {
+            sturctFieldType = "*" + sturctFieldType
+        }
 
         var structFieldTags []string
         structFieldTags = append(structFieldTags, fmt.Sprintf("json:\"%s\"", v.Name))
