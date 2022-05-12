@@ -64,3 +64,6 @@ func (q queryTable) getTags(index int, tagName string) []string {
     tags := strings.Split(q.tableStructType.Field(index).Tag.Get(tagName), ",")
     return tags
 }
+func (q queryTable) getTag(index int, tagName string) string {
+    return q.tableStructType.Field(index).Tag.Get(tagName)
+}
