@@ -5,6 +5,7 @@ import (
     "fmt"
     "reflect"
     "regexp"
+    "sort"
     "strings"
     "time"
 )
@@ -21,6 +22,7 @@ const deletedAtColumn = "deleted_at"
 var definedDefault = []string{"null", "current_timestamp", "current_timestamp on update current_timestamp"}
 
 var tagSplitRegex = regexp.MustCompile(`[^\s"]+|"([^"]*)"`)
+
 //a := r.FindAllString(s, -1)
 
 type dBColumn struct {
@@ -159,13 +161,13 @@ func generateColumnStrings(dbColums []dBColumn) []string {
 
         if len(v.Uniques) > 0 {
             for _, v2 := range v.Uniques {
-                uniqueComps[v2] = append(uniqueComps[v2], "`"+v.Name+"`")
+                uniqueComps[v2] = append(uniqueComps[v2], v.Name)
             }
         }
 
         if len(v.Indexs) > 0 {
             for _, v2 := range v.Indexs {
-                indexComps[v2] = append(indexComps[v2], "`"+v.Name+"`")
+                indexComps[v2] = append(indexComps[v2], v.Name)
             }
         }
         ret = append(ret, strings.Join(words, " "))
@@ -181,10 +183,16 @@ func generateColumnStrings(dbColums []dBColumn) []string {
         ret = append(ret, v)
     }
     for k, v := range uniqueComps {
-        ret = append(ret, fmt.Sprintf("unique key `%s` (%s)", k, strings.Join(v, ",")))
+        sort.SliceStable(v, func(i, j int) bool {
+            return strings.Index(k, v[i]) < strings.Index(k, v[j])
+        })
+        ret = append(ret, fmt.Sprintf("unique key `%s` (%s)", k, "`"+strings.Join(v, "`,`")+"`"))
     }
     for k, v := range indexComps {
-        ret = append(ret, fmt.Sprintf("key `%s` (%s)", k, strings.Join(v, ",")))
+        sort.SliceStable(v, func(i, j int) bool {
+            return strings.Index(k, v[i]) < strings.Index(k, v[j])
+        })
+        ret = append(ret, fmt.Sprintf("key `%s` (%s)", k, "`"+strings.Join(v, "`,`")+"`"))
     }
     return ret
 }
