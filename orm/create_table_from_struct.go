@@ -4,6 +4,7 @@ import (
     "errors"
     "fmt"
     "reflect"
+    "regexp"
     "strings"
     "time"
 )
@@ -18,6 +19,9 @@ const updatedAtColumn = "updated_at"
 const deletedAtColumn = "deleted_at"
 
 var definedDefault = []string{"null", "current_timestamp", "current_timestamp on update current_timestamp"}
+
+var tagSplitRegex = regexp.MustCompile(`[^\s"]+|"([^"]*)"`)
+//a := r.FindAllString(s, -1)
 
 type dBColumn struct {
     Name          string // `id`
@@ -196,7 +200,7 @@ func getMigrateColumns(table *queryTable) []dBColumn {
 
         column := dBColumn{}
 
-        ormTags := table.getTags(i, "orm")
+        ormTags := stringSplitEscapeParentheses(table.getTag(i, "orm"), ",")
         if ormTags[0] != "" {
             column.Name = ormTags[0]
         } else {
@@ -351,4 +355,35 @@ func getTypeAndDefault(val reflect.Value) (string, string) {
         }
     }
     return types, defaults
+}
+
+func stringSplitEscapeParentheses(s string, seperator string) []string {
+    var splits []string
+    var start = "("
+    var end = ")"
+
+    var openP int
+    var before string
+    for i, v := range s {
+        temp := string(v)
+        if temp == seperator && (openP == 0 || strings.Contains(s[i:], end) == false) {
+            if before != "" {
+                splits = append(splits, before)
+            }
+            before = ""
+        } else {
+            if temp == start {
+                openP += 1
+            } else if temp == end {
+                if openP > 0 {
+                    openP -= 1
+                }
+            }
+            before += temp
+        }
+    }
+    if before != "" {
+        splits = append(splits, before)
+    }
+    return splits
 }
