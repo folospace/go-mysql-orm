@@ -164,7 +164,7 @@ func main() {
         
         var userOrders map[int][]Order
         OrderTable.Query().Where(&OrderTable.UserId, orm.WhereIn, userIds).
-            Select(userOrders, &OrderTable.UserId, orm.AllCols)
+            Select(&userOrders, &OrderTable.UserId, orm.AllCols)
         
         for k := range users {
             users[k].Orders = userOrders[users[k].Id]
