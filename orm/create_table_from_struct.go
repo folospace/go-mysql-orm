@@ -393,5 +393,8 @@ func stringSplitEscapeParentheses(s string, seperator string) []string {
     if before != "" {
         splits = append(splits, before)
     }
+    if len(splits) == 0 {
+        splits = append(splits, "")
+    }
     return splits
 }
