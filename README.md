@@ -14,7 +14,7 @@ Completed Features:
 Planning Features:
 - support golang generics to make select-query more easily
 
-## struct of table 
+## Get Started
 ```go
 import (
     "database/sql"
@@ -42,7 +42,7 @@ func (*User) DatabaseName() string {
     return "mydb"
 }
 ```
-## select query 
+## select query usage
 ```go
 func main() {
     {
