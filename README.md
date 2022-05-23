@@ -12,7 +12,7 @@ Completed Features:
 - avoid using raw strings when query.
 
 Planning Features:
-- support golang generics to make select more easily
+- support golang generics to make select-query more easily
 
 ## struct of table 
 ```go
