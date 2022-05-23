@@ -1,6 +1,6 @@
 # golang mysql orm
-- A painless orm 
-- In progress
+A golang package dedicated to simplify developing with mysql database. Including many features such as: create mysql table from golang struct, create golang struct from mysql table, select from myql table to kinds of go types (make sql-select more easily).
+
 ## struct of table 
 ```go
 import (
