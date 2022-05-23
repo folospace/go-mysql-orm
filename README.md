@@ -222,3 +222,5 @@ func main() {
         //key `index_email_and_score` (`email`,`score`)
     //) 
 ```
+## contribute
+Contribute to this project by submitting a(an) PR | issue. Any contribution will be Appreciated.
