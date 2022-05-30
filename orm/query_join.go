@@ -4,17 +4,17 @@ import (
     "strings"
 )
 
-func (m *Query) Join(table Table, where func(join *Query), alias ...string) *Query {
+func (m Query[T]) Join(table Table, where func(join *Query), alias ...string) Query[T] {
     return m.join(JoinTypeInner, table, where, alias...)
 }
-func (m *Query) LeftJoin(table Table, where func(join *Query), alias ...string) *Query {
+func (m Query[T]) LeftJoin(table Table, where func(join *Query), alias ...string) Query[T] {
     return m.join(JoinTypeLeft, table, where, alias...)
 }
-func (m *Query) RightJoin(table Table, where func(join *Query), alias ...string) *Query {
+func (m Query[T]) RightJoin(table Table, where func(join *Query), alias ...string) Query[T] {
     return m.join(JoinTypeRight, table, where, alias...)
 }
 
-func (m *Query) join(joinType JoinType, table Table, wheref func(*Query), alias ...string) *Query {
+func (m Query[T]) join(joinType JoinType, table Table, wheref func(*Query), alias ...string) Query[T] {
     newTable, err := m.parseTable(table)
     if err != nil {
         return m.setErr(err)
@@ -32,7 +32,7 @@ func (m *Query) join(joinType JoinType, table Table, wheref func(*Query), alias 
     return m
 }
 
-func (m *Query) generateTableAndJoinStr(tables []*queryTable, bindings *[]interface{}) string {
+func (m Query[T]) generateTableAndJoinStr(tables []*queryTable, bindings *[]interface{}) string {
     if len(tables) == 0 {
         return ""
     }

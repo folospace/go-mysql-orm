@@ -1,7 +1,7 @@
 package orm
 
 type Table interface {
-    Query() *Query
+    //Query() *Query
     TableName() string
     DatabaseName() string
 }

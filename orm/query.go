@@ -13,7 +13,7 @@ type Raw string
 
 var AllCols = "*"
 
-type Query struct {
+type Query[T Table] struct {
     db        *sql.DB
     tx        *sql.Tx
     tables    []*queryTable
@@ -23,25 +23,34 @@ type Query struct {
     offset    int
     orderbys  []string
     forUpdate bool
+    t         *T
 }
 
-func (m *Query) UseDB(db *sql.DB) *Query {
+func NewQuery[T Table](t T, db *sql.DB) Query[T] {
+    return Query[T]{t: &t, db: db}
+}
+
+func (m Query[T]) T() *T {
+    return m.t
+}
+
+func (m Query[T]) UseDB(db *sql.DB) Query[T] {
     m.db = db
     return m
 }
-func (m *Query) UseTx(tx *sql.Tx) *Query {
+func (m Query[T]) UseTx(tx *sql.Tx) Query[T] {
     m.tx = tx
     return m
 }
 
-func (m *Query) DB() *sql.DB {
+func (m Query[T]) DB() *sql.DB {
     return m.db
 }
-func (m *Query) dbTx() *sql.Tx {
+func (m Query[T]) dbTx() *sql.Tx {
     return m.tx
 }
 
-func (m *Query) FromTable(table Table, alias ...string) *Query {
+func (m Query[T]) FromTable(table Table, alias ...string) Query[T] {
     m.tables = nil
     m.wheres = nil
     m.orderbys = nil
@@ -62,7 +71,7 @@ func (m *Query) FromTable(table Table, alias ...string) *Query {
     return m
 }
 
-func (m *Query) parseTable(table Table) (*queryTable, error) {
+func (m Query[T]) parseTable(table Table) (*queryTable, error) {
     cached := getTableFromCache(table)
     if cached != nil {
         return cached, nil
@@ -120,22 +129,22 @@ func (m *Query) parseTable(table Table) (*queryTable, error) {
     return newTable, nil
 }
 
-func (m *Query) AliasTable(alias string) *Query {
+func (m Query[T]) AliasTable(alias string) Query[T] {
     m.tables[0].alias = alias
     return m
 }
 
-func (m *Query) isRaw(v interface{}) (string, bool) {
+func (m Query[T]) isRaw(v interface{}) (string, bool) {
     val, ok := v.(Raw)
     return string(val), ok
 }
 
-func (m *Query) isOperator(v interface{}) (string, bool) {
+func (m Query[T]) isOperator(v interface{}) (string, bool) {
     val, ok := v.(WhereOperator)
     return string(val), ok
 }
 
-func (m *Query) isStringOrRaw(v interface{}) (string, bool) {
+func (m Query[T]) isStringOrRaw(v interface{}) (string, bool) {
     val := reflect.ValueOf(v)
 
     if val.Kind() == reflect.String {
@@ -145,7 +154,7 @@ func (m *Query) isStringOrRaw(v interface{}) (string, bool) {
     }
 }
 
-func (m *Query) parseColumn(v interface{}) (string, error) {
+func (m Query[T]) parseColumn(v interface{}) (string, error) {
     columnVar := reflect.ValueOf(v)
     if columnVar.Kind() == reflect.String {
         ret := columnVar.String()
@@ -176,7 +185,7 @@ func (m *Query) parseColumn(v interface{}) (string, error) {
     }
 }
 
-func (m *Query) getTableColumn(i reflect.Value) (*queryTable, string) {
+func (m Query[T]) getTableColumn(i reflect.Value) (*queryTable, string) {
     for _, t := range m.tables {
         if s, exist := t.ormFields[i.Elem().Addr().Interface()]; exist {
             return t, s
@@ -185,33 +194,33 @@ func (m *Query) getTableColumn(i reflect.Value) (*queryTable, string) {
     return nil, ""
 }
 
-func (m *Query) setErr(err error) *Query {
+func (m Query[T]) setErr(err error) Query[T] {
     if err != nil {
         m.result.Err = err
     }
     return m
 }
 
-func (m *Query) Limit(limit int) *Query {
+func (m Query[T]) Limit(limit int) Query[T] {
     m.limit = limit
     return m
 }
 
-func (m *Query) Offset(offset int) *Query {
+func (m Query[T]) Offset(offset int) Query[T] {
     m.offset = offset
     return m
 }
 
 //should not use group by after order by
-func (m *Query) GroupBy(columns ...interface{}) *Query {
+func (m Query[T]) GroupBy(columns ...interface{}) Query[T] {
     return m
 }
 
-func (m *Query) Having(where func(*Query)) *Query {
+func (m Query[T]) Having(where func(*Query)) Query[T] {
     return m
 }
 
-func (m *Query) OrderBy(column interface{}) *Query {
+func (m Query[T]) OrderBy(column interface{}) Query[T] {
     val, err := m.parseColumn(column)
     if err != nil {
         return m.setErr(err)
@@ -219,7 +228,7 @@ func (m *Query) OrderBy(column interface{}) *Query {
     m.orderbys = append(m.orderbys, val)
     return m
 }
-func (m *Query) OrderByDesc(column interface{}) *Query {
+func (m Query[T]) OrderByDesc(column interface{}) Query[T] {
     val, err := m.parseColumn(column)
     if err != nil {
         return m.setErr(err)
@@ -228,7 +237,7 @@ func (m *Query) OrderByDesc(column interface{}) *Query {
     return m
 }
 
-func (m *Query) getOrderAndLimitSqlStr() string {
+func (m Query[T]) getOrderAndLimitSqlStr() string {
     var orderStr string
     if len(m.orderbys) > 0 {
         orderStr = "order by " + strings.Join(m.orderbys, ",")
@@ -253,7 +262,7 @@ func (m *Query) getOrderAndLimitSqlStr() string {
     return ret
 }
 
-func (m *Query) currentFilename() string {
+func (m Query[T]) currentFilename() string {
     _, fs, _, _ := runtime.Caller(2)
     return fs
 }

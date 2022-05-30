@@ -11,10 +11,6 @@ type tempTable struct {
     err      error
 }
 
-func (m *tempTable) Query() *Query {
-    return new(Query).UseDB(m.db).UseTx(m.tx).FromTable(m)
-}
-
 func (*tempTable) TableName() string {
     return "sub"
 }

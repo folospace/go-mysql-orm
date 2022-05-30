@@ -25,7 +25,7 @@ const (
     WhereIsNotNull      WhereOperator = "is not null"
 )
 
-func (m *Query) where(isOr bool, column interface{}, vals ...interface{}) *Query {
+func (m Query[T]) where(isOr bool, column interface{}, vals ...interface{}) Query[T] {
     if len(vals) > 2 {
         return m.setErr(errors.New("where vals should be less than 2"))
     }
@@ -107,7 +107,7 @@ func (m *Query) where(isOr bool, column interface{}, vals ...interface{}) *Query
     return m
 }
 
-func (m *Query) generateWhereStr(wheres []where, bindings *[]interface{}) string {
+func (m Query[T]) generateWhereStr(wheres []where, bindings *[]interface{}) string {
     var whereStr []string
     for k, v := range wheres {
         tempStr := ""
@@ -139,32 +139,32 @@ func (m *Query) generateWhereStr(wheres []where, bindings *[]interface{}) string
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m *Query) Where(column interface{}, vals ...interface{}) *Query {
+func (m Query[T]) Where(column interface{}, vals ...interface{}) Query[T] {
     return m.where(false, column, vals...)
 }
 
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m *Query) OrWhere(column interface{}, vals ...interface{}) *Query {
+func (m Query[T]) OrWhere(column interface{}, vals ...interface{}) Query[T] {
     return m.where(true, column, vals...)
 }
 
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m *Query) WhereGroup(f func(*Query)) *Query {
+func (m Query[T]) WhereGroup(f func(*Query)) Query[T] {
     return m.whereGroup(false, f)
 }
 
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m *Query) OrWhereGroup(f func(*Query)) *Query {
+func (m Query[T]) OrWhereGroup(f func(*Query)) Query[T] {
     return m.whereGroup(true, f)
 }
 
-func (m *Query) whereGroup(isOr bool, f func(*Query)) *Query {
+func (m Query[T]) whereGroup(isOr bool, f func(*Query)) Query[T] {
     temp := m.generateWhereGroup(f)
 
     if len(temp.SubWheres) > 0 {
@@ -174,7 +174,7 @@ func (m *Query) whereGroup(isOr bool, f func(*Query)) *Query {
     return m
 }
 
-func (m *Query) generateWhereGroup(f func(*Query)) where {
+func (m Query[T]) generateWhereGroup(f func(*Query)) where {
     start := len(m.wheres)
     f(m)
     newWheres := m.wheres[start:]

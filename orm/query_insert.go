@@ -8,16 +8,16 @@ import (
 )
 
 //tableFieldAddrs: allow insert table columns
-func (m *Query) Insert(data interface{}, tableFieldAddrs ...interface{}) QueryResult {
+func (m Query[T]) Insert(data interface{}, tableFieldAddrs ...interface{}) QueryResult {
     return m.insert(false, data, tableFieldAddrs, nil)
 }
 
 //insert ignore ... // on duplicate key update ...
-func (m *Query) InsertIgnore(data interface{}, tableFieldAddrs []interface{}, updates ...UpdateColumn) QueryResult {
+func (m Query[T]) InsertIgnore(data interface{}, tableFieldAddrs []interface{}, updates ...UpdateColumn) QueryResult {
     return m.insert(true, data, tableFieldAddrs, updates)
 }
 
-func (m *Query) gennerateInsertSql(InsertColumns []string, rowCount int) string {
+func (m Query[T]) gennerateInsertSql(InsertColumns []string, rowCount int) string {
     columnRawStr := ""
     valRawStr := ""
 
@@ -41,7 +41,7 @@ func (m *Query) gennerateInsertSql(InsertColumns []string, rowCount int) string 
     }
 }
 
-func (m *Query) getInsertBindings(val reflect.Value, isSlice bool, validFieldIndex map[int]struct{}) []interface{} {
+func (m Query[T]) getInsertBindings(val reflect.Value, isSlice bool, validFieldIndex map[int]struct{}) []interface{} {
     var bindings []interface{}
     if isSlice == false {
         for i := 0; i < val.NumField(); i++ {
@@ -61,7 +61,7 @@ func (m *Query) getInsertBindings(val reflect.Value, isSlice bool, validFieldInd
     return bindings
 }
 
-func (m *Query) insert(ignore bool, data interface{}, tableFieldAddrs []interface{}, updates []UpdateColumn) QueryResult {
+func (m Query[T]) insert(ignore bool, data interface{}, tableFieldAddrs []interface{}, updates []UpdateColumn) QueryResult {
     val := reflect.ValueOf(data)
     var err error
     isSlice := false

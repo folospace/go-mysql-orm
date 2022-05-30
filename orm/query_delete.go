@@ -5,7 +5,7 @@ import (
     "errors"
 )
 
-func (m *Query) Delete() QueryResult {
+func (m Query[T]) Delete() QueryResult {
     if len(m.tables) == 0 {
         m.setErr(errors.New("delete table not selected"))
         return m.result

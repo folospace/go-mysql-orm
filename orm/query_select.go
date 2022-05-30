@@ -8,57 +8,57 @@ import (
 )
 
 //dest: *int | *int64 | ...
-func (m *Query) SelectCount(dest interface{}) QueryResult {
+func (m Query[T]) SelectCount(dest interface{}) QueryResult {
     return m.Select(dest, "count(*)")
 }
 
 //dest: *int | *string | ...
-func (m *Query) SelectValueOfFirstCell(dest interface{}, columns ...interface{}) QueryResult {
+func (m Query[T]) SelectValueOfFirstCell(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
 
 //dest: *[]int | *[]string | ...
-func (m *Query) SelectSliceOfColumn1(dest interface{}, columns ...interface{}) QueryResult {
+func (m Query[T]) SelectSliceOfColumn1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
 
 //dest: *struct
-func (m *Query) SelectStructOfRow1(dest interface{}, columns ...interface{}) QueryResult {
+func (m Query[T]) SelectStructOfRow1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
 
 //dest: *[]struct
-func (m *Query) SelectSliceOfStruct(dest interface{}, columns ...interface{}) QueryResult {
+func (m Query[T]) SelectSliceOfStruct(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
 
 //dest: *map [int | string | ...] struct
-func (m *Query) SelectMapOfStructKeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
+func (m Query[T]) SelectMapOfStructKeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
 
 //dest: *map [int | string | ...] []struct
-func (m *Query) SelectMapOfStructSliceKeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
+func (m Query[T]) SelectMapOfStructSliceKeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
 
 //dest: *map [int | string | ...] int | string ...
-func (m *Query) SelectMapOfColumn2KeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
+func (m Query[T]) SelectMapOfColumn2KeyByColumn1(dest interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
 
 //dest, first of sql rows: *map[column_name]column_value
-func (m *Query) SelectMapStr2Interface(dest *map[string]interface{}, columns ...interface{}) QueryResult {
+func (m Query[T]) SelectMapStr2Interface(dest *map[string]interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
 
 //dest, sql rows: *[]map[column_name]column_value
-func (m *Query) SelectSliceOfMapStr2Interface(dest *[]map[string]interface{}, columns ...interface{}) QueryResult {
+func (m Query[T]) SelectSliceOfMapStr2Interface(dest *[]map[string]interface{}, columns ...interface{}) QueryResult {
     return m.Select(dest, columns...)
 }
 
 //select from raw sql
-func (m *Query) SelectRaw(dest interface{}, prepareSql string, bindings ...interface{}) QueryResult {
+func (m Query[T]) SelectRaw(dest interface{}, prepareSql string, bindings ...interface{}) QueryResult {
     m.result.PrepareSql = prepareSql
     m.result.Bindings = bindings
 
@@ -89,7 +89,7 @@ func (m *Query) SelectRaw(dest interface{}, prepareSql string, bindings ...inter
     return m.result
 }
 
-func (m *Query) SelectSub(columns ...interface{}) *tempTable {
+func (m Query[T]) SelectSub(columns ...interface{}) *tempTable {
     tempTable := m.generateSelectQuery(columns...)
 
     tempTable.db = m.db
@@ -100,12 +100,12 @@ func (m *Query) SelectSub(columns ...interface{}) *tempTable {
     return &tempTable
 }
 
-func (m *Query) SelectForUpdate(dest interface{}, columns ...interface{}) QueryResult {
+func (m Query[T]) SelectForUpdate(dest interface{}, columns ...interface{}) QueryResult {
     m.forUpdate = true
     return m.Select(dest, columns...)
 }
 
-func (m *Query) Select(dest interface{}, columns ...interface{}) QueryResult {
+func (m Query[T]) Select(dest interface{}, columns ...interface{}) QueryResult {
     tempTable := m.generateSelectQuery(columns...)
 
     m.result.PrepareSql = tempTable.raw
@@ -137,7 +137,7 @@ func (m *Query) Select(dest interface{}, columns ...interface{}) QueryResult {
     m.result.Err = m.scanRows(dest, rows)
     return m.result
 }
-func (m *Query) generateSelectColumns(columns ...interface{}) string {
+func (m Query[T]) generateSelectColumns(columns ...interface{}) string {
     var outColumns []string
     for _, v := range columns {
         column, err := m.parseColumn(v)
@@ -155,7 +155,7 @@ func (m *Query) generateSelectColumns(columns ...interface{}) string {
     }
 }
 
-func (m *Query) generateSelectQuery(columns ...interface{}) tempTable {
+func (m Query[T]) generateSelectQuery(columns ...interface{}) tempTable {
     bindings := make([]interface{}, 0)
 
     selectStr := m.generateSelectColumns(columns...)
@@ -187,7 +187,7 @@ func (m *Query) generateSelectQuery(columns ...interface{}) tempTable {
     return ret
 }
 
-func (m *Query) scanValues(baseAddrs []interface{}, rowColumns []string, rows *sql.Rows, setVal func(), tryOnce bool) error {
+func (m Query[T]) scanValues(baseAddrs []interface{}, rowColumns []string, rows *sql.Rows, setVal func(), tryOnce bool) error {
     var err error
     var tempAddrs = make([]interface{}, len(rowColumns))
     for k := range rowColumns {
@@ -227,7 +227,7 @@ func (m *Query) scanValues(baseAddrs []interface{}, rowColumns []string, rows *s
     return err
 }
 
-func (m *Query) scanRows(dest interface{}, rows *sql.Rows) error {
+func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
     rowColumns, err := rows.Columns()
     if err != nil {
         return err

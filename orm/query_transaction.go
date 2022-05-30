@@ -2,7 +2,7 @@ package orm
 
 import "context"
 
-func (m *Query) Transaction(query func(db *Query) error) error {
+func (m Query[T]) Transaction(query func(db *Query) error) error {
     tx, err := m.DB().BeginTx(context.Background(), nil)
     if err != nil {
         return err

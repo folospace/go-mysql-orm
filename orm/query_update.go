@@ -6,14 +6,14 @@ import (
     "strings"
 )
 
-func (m *Query) Update(column interface{}, val interface{}) QueryResult {
+func (m Query[T]) Update(column interface{}, val interface{}) QueryResult {
     return m.Updates(UpdateColumn{
         Column: column,
         Val:    val,
     })
 }
 
-func (m *Query) Updates(updates ...UpdateColumn) QueryResult {
+func (m Query[T]) Updates(updates ...UpdateColumn) QueryResult {
     bindings := make([]interface{}, 0)
 
     tableStr := m.generateTableAndJoinStr(m.tables, &bindings)
@@ -61,7 +61,7 @@ func (m *Query) Updates(updates ...UpdateColumn) QueryResult {
     return m.result
 }
 
-func (m *Query) generateUpdateStr(updates []UpdateColumn, bindings *[]interface{}) string {
+func (m Query[T]) generateUpdateStr(updates []UpdateColumn, bindings *[]interface{}) string {
     var updateStrs []string
     for _, v := range updates {
         var temp string

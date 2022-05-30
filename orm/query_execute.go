@@ -2,7 +2,7 @@ package orm
 
 import "database/sql"
 
-func (m *Query) ExecuteRaw(prepareSql string, bindings ...interface{}) QueryResult {
+func (m Query[T]) ExecuteRaw(prepareSql string, bindings ...interface{}) QueryResult {
     m.result.PrepareSql = prepareSql
     m.result.Bindings = bindings
 
