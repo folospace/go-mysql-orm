@@ -213,10 +213,11 @@ func (m Query[T]) Offset(offset int) Query[T] {
 
 //should not use group by after order by
 func (m Query[T]) GroupBy(columns ...interface{}) Query[T] {
+    //todo groupby
     return m
 }
 
-func (m Query[T]) Having(where func(*Query)) Query[T] {
+func (m Query[T]) Having(h interface{}) Query[T] {
     return m
 }
 

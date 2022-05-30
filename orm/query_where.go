@@ -153,18 +153,18 @@ func (m Query[T]) OrWhere(column interface{}, vals ...interface{}) Query[T] {
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m Query[T]) WhereGroup(f func(*Query)) Query[T] {
+func (m Query[T]) WhereGroup(f func(*Query[T])) Query[T] {
     return m.whereGroup(false, f)
 }
 
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m Query[T]) OrWhereGroup(f func(*Query)) Query[T] {
+func (m Query[T]) OrWhereGroup(f func(*Query[T])) Query[T] {
     return m.whereGroup(true, f)
 }
 
-func (m Query[T]) whereGroup(isOr bool, f func(*Query)) Query[T] {
+func (m Query[T]) whereGroup(isOr bool, f func(*Query[T])) Query[T] {
     temp := m.generateWhereGroup(f)
 
     if len(temp.SubWheres) > 0 {
@@ -174,9 +174,9 @@ func (m Query[T]) whereGroup(isOr bool, f func(*Query)) Query[T] {
     return m
 }
 
-func (m Query[T]) generateWhereGroup(f func(*Query)) where {
+func (m Query[T]) generateWhereGroup(f func(*Query[T])) where {
     start := len(m.wheres)
-    f(m)
+    f(&m)
     newWheres := m.wheres[start:]
     if len(newWheres) > 0 {
         subwheres := make([]where, 0)
