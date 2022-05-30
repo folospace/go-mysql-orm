@@ -73,7 +73,7 @@ func CreateStructFromTable(table Table) error {
         structLines = append(structLines, line)
     }
 
-    structFile := table.Query().currentFilename()
+    structFile := "" //table.Query().currentFilename()
 
     fileBytes, err := ioutil.ReadFile(structFile)
     if err != nil {
@@ -127,8 +127,8 @@ func getStructFieldTypeStringByDBType(dbType string) string {
 
 func getSqlSegments(table Table) ([]string, error) {
     var res map[string]string
-    err := table.Query().SelectRaw(&res, "show create table "+table.TableName()).Err
-
+    //err := table.Query().SelectRaw(&res, "show create table "+table.TableName()).Err
+    var err error
     if err != nil {
         return nil, err
     }

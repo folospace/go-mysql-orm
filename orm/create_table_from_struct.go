@@ -40,8 +40,8 @@ type dBColumn struct {
     Uniques []string //composite unique index names
 }
 
-func CreateTableFromStruct(table Table) (string, error) {
-    originQuery := table.Query()
+func CreateTableFromStruct[T Table](query Query[T]) (string, error) {
+    originQuery := query
     db := originQuery.DB()
     if db == nil {
         return "", errors.New("no db exist")
@@ -59,14 +59,14 @@ func CreateTableFromStruct(table Table) (string, error) {
 
     dbColumnStrs := generateColumnStrings(dbColums)
 
-    originColumnStrs, _ := getSqlSegments(table)
+    originColumnStrs, _ := getSqlSegments(query.T())
 
     if len(originColumnStrs) > 0 {
         extraStrs := getTableNewColumns(originColumnStrs, dbColumnStrs)
         retSql := ""
         var err error
         for _, v := range extraStrs {
-            tempSql := "ALTER TABLE " + table.TableName() + " ADD " + v
+            tempSql := "ALTER TABLE " + query.T().TableName() + " ADD " + v
 
             retSql += tempSql + "\n"
             _, err = db.Exec(tempSql)
