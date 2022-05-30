@@ -23,14 +23,15 @@ type Query[T Table] struct {
     offset    int
     orderbys  []string
     forUpdate bool
-    t         *T
+    t         T
 }
 
 func NewQuery[T Table](t T, db *sql.DB) Query[T] {
-    return Query[T]{t: &t, db: db}
+    q := Query[T]{t: t, db: db}
+    return q.FromTable(t)
 }
 
-func (m Query[T]) T() *T {
+func (m Query[T]) T() T {
     return m.t
 }
 
@@ -129,7 +130,7 @@ func (m Query[T]) parseTable(table Table) (*queryTable, error) {
     return newTable, nil
 }
 
-func (m Query[T]) AliasTable(alias string) Query[T] {
+func (m Query[T]) Alias(alias string) Query[T] {
     m.tables[0].alias = alias
     return m
 }
