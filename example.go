@@ -78,34 +78,24 @@ func main() {
         UserTable.Select(&UserTable.T.Name, orm.AllCols).GetTo(&usersMapkeyByName)
     }
 
-    //query update and delete
+    //query update and delete and insert
     {
         //update user set name="hello" where id=1
         UserTable.Where(&UserTable.T.Id, 1).Update(&UserTable.T.Name, "hello")
 
         //query delete
         UserTable.Where(&UserTable.T.Id, 1).Delete()
+
+        //query insert
+        _ = UserTable.Insert(User{Name: "han"}).LastInsertId //insert one row and get id
     }
 
     //query join and where
     {
-        UserTable.Join(OrderTable, func(query *orm.Query) {
-            query.Where(&UserTable.Id, &OrderTable.UserId)
-        }).
-            Where(&UserTable.Id, orm.WhereIn, []int{1, 2}).
-            Update(&OrderTable.OrderAmount, 100)
-    }
-
+        UserTable.Join(OrderTable.T, func(query *orm.Query[User]) {
+            query.Where(&UserTable.T.Id, &OrderTable.T.UserId)
+        })
     {
-        //query insert
-        _ = UserTable.Query().Insert(User{Name: "han"}).LastInsertId //insert one row and get id
-        //insert rows and update column
-        OrderTable.Query().InsertIgnore([]Order{{Id: 1, OrderAmount: 100}, {Id: 2, OrderAmount: 120}},
-            []interface{}{&OrderTable.Id, &OrderTable.OrderAmount},
-            orm.UpdateColumn{ //update order amount if order id exist and amount is zero
-                Column: &OrderTable.OrderAmount,
-                Val:    orm.Raw("if(order_amount, order_amount, values(order_amount))"),
-            })
     }
 
     {
@@ -142,7 +132,7 @@ func main() {
         UserTable.Query().InsertIgnore(subquery, []interface{}{&UserTable.Id}, orm.UpdateColumn{Column: &UserTable.Name, Val: "change selected users' name"})
     }
     {
-        orm.CreateTableFromStruct(UserTable)
-        orm.CreateStructFromTable(UserTable)
+        _, _ = orm.CreateTableFromStruct(UserTable)
+        _ = orm.CreateStructFromTable(UserTable)
     }
 }

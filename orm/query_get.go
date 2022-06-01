@@ -14,7 +14,7 @@ func (m Query[T]) Get() (T, QueryResult) {
     return ret, res
 }
 
-//get T slice
+//get slice T
 func (m Query[T]) Gets() ([]T, QueryResult) {
     var ret []T
     res := m.GetTo(&ret)
@@ -28,14 +28,14 @@ func (m Query[T]) GetRow() (map[string]interface{}, QueryResult) {
     return ret, res
 }
 
-//get row slice
+//get slice row
 func (m Query[T]) GetRows() ([]map[string]interface{}, QueryResult) {
     var ret []map[string]interface{}
     res := m.Limit(1).GetTo(&ret)
     return ret, res
 }
 
-//get first T
+//get count T
 func (m Query[T]) GetCount() (int64, QueryResult) {
     var ret int64
     if len(m.groupBy) == 0 {
