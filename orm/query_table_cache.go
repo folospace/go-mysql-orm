@@ -6,7 +6,7 @@ import (
 
 var tableCache sync.Map
 
-func getTableFromCache(key Table) *queryTable {
+func getTableFromCache(key interface{}) *queryTable {
     res, ok := tableCache.Load(key)
     if ok {
         ret, ok := res.(*queryTable)
@@ -17,6 +17,6 @@ func getTableFromCache(key Table) *queryTable {
     return nil
 }
 
-func cacheTable(key Table, val *queryTable) {
+func cacheTable(key interface{}, val *queryTable) {
     tableCache.Store(key, val)
 }

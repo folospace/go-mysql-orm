@@ -23,16 +23,13 @@ type Query[T Table] struct {
     offset    int
     orderbys  []string
     forUpdate bool
-    t         T
+    T         T
+    columns   []interface{}
 }
 
 func NewQuery[T Table](t T, db *sql.DB) Query[T] {
-    q := Query[T]{t: t, db: db}
+    q := Query[T]{T: t, db: db}
     return q.FromTable(t)
-}
-
-func (m Query[T]) T() T {
-    return m.t
 }
 
 func (m Query[T]) UseDB(db *sql.DB) Query[T] {

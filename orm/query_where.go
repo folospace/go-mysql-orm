@@ -153,14 +153,14 @@ func (m Query[T]) OrWhere(column interface{}, vals ...interface{}) Query[T] {
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m Query[T]) WhereGroup(f func(*Query[T])) Query[T] {
+func (m Query[T]) WhereFunc(f func(*Query[T])) Query[T] {
     return m.whereGroup(false, f)
 }
 
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m Query[T]) OrWhereGroup(f func(*Query[T])) Query[T] {
+func (m Query[T]) OrWhereFunc(f func(*Query[T])) Query[T] {
     return m.whereGroup(true, f)
 }
 

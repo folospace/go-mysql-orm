@@ -1,7 +1,6 @@
 package orm
 
 import (
-    "fmt"
     "strings"
 )
 
@@ -13,6 +12,31 @@ type QueryResult struct {
     Err          error
 }
 
-func (q *QueryResult) Sql() string {
-    return fmt.Sprintf(strings.Replace(q.PrepareSql, "?", "'%+v'", len(q.Bindings)), q.Bindings...)
+func (q QueryResult) Error() error {
+    return q.Err
+}
+
+func (q QueryResult) Sql() string {
+    params := make([]string, len(q.Bindings))
+    for k, v := range q.Bindings {
+        params[k] = varToString(v)
+    }
+
+    var sql strings.Builder
+    var index int = 0
+
+    for _, v := range []byte(q.PrepareSql) {
+        if v == '?' {
+            if len(params) > index {
+                sql.WriteString(params[index])
+                index++
+            } else {
+                break
+            }
+        } else {
+            sql.WriteByte(v)
+        }
+    }
+
+    return sql.String()
 }

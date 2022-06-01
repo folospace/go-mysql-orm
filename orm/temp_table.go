@@ -11,14 +11,14 @@ type tempTable struct {
     err      error
 }
 
-func (*tempTable) TableName() string {
+func (tempTable) TableName() string {
     return "sub"
 }
 
-func (m *tempTable) DatabaseName() string {
+func (m tempTable) DatabaseName() string {
     return m.dbName
 }
 
-func (m *tempTable) Error() error {
+func (m tempTable) Error() error {
     return m.err
 }
