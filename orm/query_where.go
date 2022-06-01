@@ -73,7 +73,7 @@ func (m Query[T]) where(isOr bool, column interface{}, vals ...interface{}) Quer
             }
             raw = c + " " + operator + value
         } else {
-            tempTable, ok := val.(*tempTable)
+            tempTable, ok := val.(*SubQuery)
             if ok {
                 if operator != "" {
                     operator += " "

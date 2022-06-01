@@ -14,22 +14,32 @@ type Raw string
 var AllCols = "*"
 
 type Query[T Table] struct {
-    db        *sql.DB
-    tx        *sql.Tx
-    tables    []*queryTable
-    wheres    []where
-    result    QueryResult
-    limit     int
-    offset    int
-    orderbys  []string
-    forUpdate bool
-    T         T
-    columns   []interface{}
+    db          *sql.DB
+    tx          *sql.Tx
+    tables      []*queryTable
+    wheres      []where
+    result      QueryResult
+    limit       int
+    offset      int
+    orderbys    []string
+    forUpdate   bool
+    T           *T
+    columns     []interface{}
+    prepareSql  string
+    bindings    []interface{}
+    groupBy     []interface{}
+    having      []where
+    curFileName string
 }
 
 func NewQuery[T Table](t T, db *sql.DB) Query[T] {
-    q := Query[T]{T: t, db: db}
-    return q.FromTable(interface{}(&t).(Table))
+    q := Query[T]{T: &t, db: db}
+    q.curFileName = q.currentFilename()
+    return q.FromTable(q.TableInterface())
+}
+
+func (m Query[T]) TableInterface() Table {
+    return interface{}(m.T).(Table)
 }
 
 func (m Query[T]) UseDB(db *sql.DB) Query[T] {
@@ -52,6 +62,11 @@ func (m Query[T]) FromTable(table Table, alias ...string) Query[T] {
     m.tables = nil
     m.wheres = nil
     m.orderbys = nil
+    m.columns = nil
+    m.prepareSql = ""
+    m.bindings = nil
+    m.groupBy = nil
+    m.having = nil
     m.limit, m.offset = 0, 0
     m.result = QueryResult{}
 
@@ -84,7 +99,7 @@ func (m Query[T]) parseTable(table Table) (*queryTable, error) {
         return nil, errors.New("obj must be struct")
     }
 
-    temp, ok := table.(*tempTable)
+    temp, ok := table.(*SubQuery)
     var newTable *queryTable
     if ok {
         newTable = &queryTable{
@@ -211,12 +226,34 @@ func (m Query[T]) Offset(offset int) Query[T] {
 
 //should not use group by after order by
 func (m Query[T]) GroupBy(columns ...interface{}) Query[T] {
-    //todo groupby
+    m.groupBy = append(m.groupBy, columns...)
     return m
 }
 
-func (m Query[T]) Having(h interface{}) Query[T] {
-    return m
+func (m Query[T]) Having(column interface{}, vals ...interface{}) Query[T] {
+    oldWheres := m.wheres
+
+    newQuery := m.where(false, column, vals...)
+
+    newWheres := newQuery.wheres[len(oldWheres):]
+    if len(newWheres) > 0 {
+        newQuery.having = append(newQuery.having, newWheres...)
+        newQuery.wheres = oldWheres
+    }
+    return newQuery
+}
+
+func (m Query[T]) orHaving(column interface{}, vals ...interface{}) Query[T] {
+    oldWheres := m.wheres
+
+    newQuery := m.where(true, column, vals...)
+
+    newWheres := newQuery.wheres[len(oldWheres):]
+    if len(newWheres) > 0 {
+        newQuery.having = append(newQuery.having, newWheres...)
+        newQuery.wheres = oldWheres
+    }
+    return newQuery
 }
 
 func (m Query[T]) OrderBy(column interface{}) Query[T] {

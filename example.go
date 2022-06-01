@@ -12,25 +12,22 @@ import (
 var db, _ = sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/mydb?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
 
 //user table model
-var UserTable = new(User)
+var UserTable = orm.NewQuery(User{}, db)
 
 type User struct {
     Id   int    `json:"id"`
     Name string `json:"name"`
 }
 
-func (m *User) Query() *orm.Query {
-    return new(orm.Query).UseDB(db).FromTable(m)
-}
-func (*User) TableName() string {
+func (User) TableName() string {
     return "user"
 }
-func (*User) DatabaseName() string {
+func (User) DatabaseName() string {
     return "mydb"
 }
 
 //user table model
-var OrderTable = new(Order)
+var OrderTable = orm.NewQuery(Order{}, db)
 
 type Order struct {
     Id          int `json:"id"`
@@ -38,82 +35,65 @@ type Order struct {
     OrderAmount int `json:"order_amount"`
 }
 
-func (m *Order) Query() *orm.Query {
-    return new(orm.Query).UseDB(db).FromTable(m)
-}
-func (*Order) TableName() string {
+func (Order) TableName() string {
     return "order"
 }
-func (*Order) DatabaseName() string {
+func (Order) DatabaseName() string {
     return "mydb"
 }
 
 func main() {
     //query select
     {
-        var data User //select one user
-        UserTable.Query().Limit(1).Select(&data)
-        fmt.Println(data)
-    }
-    {
-        var data []User //select users
-        UserTable.Query().Limit(5).Select(&data)
-        fmt.Println(data)
-    }
-    {
-        var data int //select count
-        UserTable.Query().SelectCount(&data)
-        fmt.Println(data)
-    }
-    {
-        var data []int //select user.ids
-        UserTable.Query().Limit(5).Select(&data, &UserTable.Id)
-        fmt.Println(data)
-    }
-    {
-        var data map[int]User //select map[id]user
-        UserTable.Query().Limit(5).Select(&data)
-        fmt.Println(data)
-    }
-    {
-        var data map[int][]User //select map[id][]user
-        UserTable.Query().Limit(5).Select(&data)
-        fmt.Println(data)
-    }
-    {
-        var data map[int]string //select map[id]name
-        UserTable.Query().Limit(5).Select(&data, &UserTable.Id, &UserTable.Name)
-        fmt.Println(data)
-    }
-    {
-        var data []map[string]interface{} //select []map[column_name]column_value
-        UserTable.Query().Limit(5).Select(&data)
-        fmt.Println(data)
-    }
-    {
-        var data map[string]interface{} //select map[column_name]column_value
-        UserTable.Query().SelectRaw(&data, "show create table " + UserTable.TableName())
-        fmt.Println(data)
+        //get first user as struct
+        user, query := UserTable.Get()
+        fmt.Println(user, query.Sql(), query.Error())
+
+        //get users as struct slice
+        users, query := UserTable.Limit(5).Gets()
+        fmt.Println(users, query.Sql(), query.Error())
+
+        //get user first row as map[string]interface
+        row, query := UserTable.GetRow()
+        fmt.Println(row, query.Sql(), query.Error())
+
+        //get user rows as []map[string]interface
+        rows, query := UserTable.Limit(5).GetRows()
+        fmt.Println(rows, query.Sql(), query.Error())
+
+        //get users count(*)
+        count, query := UserTable.GetCount()
+        fmt.Println(count, query.Sql(), query.Error())
+
+        //get users map key by id
+        var usersKeyById map[int]User
+        UserTable.GetTo(&usersKeyById)
+
+        //get user names map key by id
+        var userNameKeyById map[int]string
+        UserTable.Select(&UserTable.T.Id, &UserTable.T.Name).GetTo(&userNameKeyById)
+
+        //get users map key by name
+        var usersMapkeyByName map[string][]User
+        UserTable.Select(&UserTable.T.Name, orm.AllCols).GetTo(&usersMapkeyByName)
     }
 
-    //query where
+    //query update and delete
     {
         //update user set name="hello" where id=1
-        UserTable.Query().Where(&UserTable.Id, 1).Update(&UserTable.Name, "hello")
+        UserTable.Where(&UserTable.T.Id, 1).Update(&UserTable.T.Name, "hello")
+
+        //query delete
+        UserTable.Where(&UserTable.T.Id, 1).Delete()
     }
 
     //query join and where
     {
-        UserTable.Query().Join(OrderTable, func(query *orm.Query) {
+        UserTable.Join(OrderTable, func(query *orm.Query) {
             query.Where(&UserTable.Id, &OrderTable.UserId)
         }).
             Where(&UserTable.Id, orm.WhereIn, []int{1, 2}).
             Update(&OrderTable.OrderAmount, 100)
-    }
-
-    {
-        //query delete
-        UserTable.Query().Where(&UserTable.Id, 1).Delete()
     }
 
     {

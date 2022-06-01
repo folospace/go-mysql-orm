@@ -7,20 +7,71 @@ import (
     "strings"
 )
 
+//get first T
 func (m Query[T]) Get() (T, QueryResult) {
-    ret := new(T)
-    res := m.Limit(1).GetTo(ret)
-    return *ret, res
+    var ret T
+    res := m.Limit(1).GetTo(&ret)
+    return ret, res
 }
 
-func (m Query[T]) GetList() ([]T, QueryResult) {
-    ret := make([]T, 0)
+//get T slice
+func (m Query[T]) Gets() ([]T, QueryResult) {
+    var ret []T
     res := m.GetTo(&ret)
     return ret, res
 }
 
+//get first row
+func (m Query[T]) GetRow() (map[string]interface{}, QueryResult) {
+    var ret map[string]interface{}
+    res := m.Limit(1).GetTo(&ret)
+    return ret, res
+}
+
+//get row slice
+func (m Query[T]) GetRows() ([]map[string]interface{}, QueryResult) {
+    var ret []map[string]interface{}
+    res := m.Limit(1).GetTo(&ret)
+    return ret, res
+}
+
+//get first T
+func (m Query[T]) GetCount() (int64, QueryResult) {
+    var ret int64
+    if len(m.groupBy) == 0 {
+        if len(m.columns) == 0 {
+            res := m.Select("count(*)").GetTo(&ret)
+            return ret, res
+        } else {
+            c, err := m.parseColumn(m.columns[0])
+            m.columns = nil
+            if err == nil {
+                cl := strings.ToLower(c)
+                if strings.HasPrefix(cl, "count(") == false || strings.Contains(cl, ")") == false {
+                    c = "count(" + c + ")"
+                }
+            }
+            res := m.setErr(err).Select(c).GetTo(&ret)
+            return ret, res
+        }
+    } else {
+        tempTable := m.SubQuery()
+
+        newQuery := NewQuery(tempTable, tempTable.db)
+
+        res := newQuery.Select("count(*)").GetTo(&ret)
+        return ret, res
+    }
+}
+
+//destPtr: *int | *int64 |  *string | ...
+//destPtr: *[]int | *[]string | ...
+//destPtr: *struct | *[]struct
+//destPtr: *map [int | string | ...] int | string ...
+//destPtr: *map [int | string | ...] struct
+//destPtr: *map [int | string | ...] []struct
 func (m Query[T]) GetTo(destPtr interface{}) QueryResult {
-    tempTable := m.generateSelectQuery(m.columns...)
+    tempTable := m.SubQuery()
 
     m.result.PrepareSql = tempTable.raw
     m.result.Bindings = tempTable.bindings
@@ -50,56 +101,6 @@ func (m Query[T]) GetTo(destPtr interface{}) QueryResult {
 
     m.result.Err = m.scanRows(destPtr, rows)
     return m.result
-}
-
-func (m Query[T]) generateSelectColumns(columns ...interface{}) string {
-    var outColumns []string
-    for _, v := range columns {
-        column, err := m.parseColumn(v)
-        if err != nil {
-            m.result.Err = err
-            return ""
-        }
-        outColumns = append(outColumns, column) //column string name
-    }
-
-    if len(outColumns) == 0 {
-        return "*"
-    } else {
-        return strings.Join(outColumns, ",")
-    }
-}
-
-func (m Query[T]) generateSelectQuery(columns ...interface{}) tempTable {
-    bindings := make([]interface{}, 0)
-
-    selectStr := m.generateSelectColumns(columns...)
-
-    tableStr := m.generateTableAndJoinStr(m.tables, &bindings)
-
-    whereStr := m.generateWhereStr(m.wheres, &bindings)
-
-    orderLimitOffsetStr := m.getOrderAndLimitSqlStr()
-
-    rawSql := "select " + selectStr
-    if m.forUpdate {
-        rawSql += " for update"
-    }
-    if tableStr != "" {
-        rawSql += " from " + tableStr
-        if whereStr != "" {
-            rawSql += " where " + whereStr
-        }
-    }
-
-    if orderLimitOffsetStr != "" {
-        rawSql += " " + orderLimitOffsetStr
-    }
-
-    var ret tempTable
-    ret.raw = rawSql
-    ret.bindings = bindings
-    return ret
 }
 
 func (m Query[T]) scanValues(baseAddrs []interface{}, rowColumns []string, rows *sql.Rows, setVal func(), tryOnce bool) error {

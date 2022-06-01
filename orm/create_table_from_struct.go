@@ -59,14 +59,14 @@ func CreateTableFromStruct[T Table](query Query[T]) (string, error) {
 
     dbColumnStrs := generateColumnStrings(dbColums)
 
-    originColumnStrs, _ := getSqlSegments(query.T)
+    originColumnStrs, _ := getSqlSegments(query)
 
     if len(originColumnStrs) > 0 {
         extraStrs := getTableNewColumns(originColumnStrs, dbColumnStrs)
         retSql := ""
         var err error
         for _, v := range extraStrs {
-            tempSql := "ALTER TABLE " + query.T.TableName() + " ADD " + v
+            tempSql := "ALTER TABLE " + query.TableInterface().TableName() + " ADD " + v
 
             retSql += tempSql + "\n"
             _, err = db.Exec(tempSql)

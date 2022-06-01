@@ -66,7 +66,7 @@ func (m Query[T]) insert(ignore bool, data interface{}, tableFieldAddrs []interf
     var err error
     isSlice := false
     isSubQuery := false
-    var subQuery *tempTable
+    var subq *SubQuery
     rowCount := 1
     var structFields []string
     if val.Kind() == reflect.Slice {
@@ -86,12 +86,12 @@ func (m Query[T]) insert(ignore bool, data interface{}, tableFieldAddrs []interf
         structFields, err = getStructFieldNameSlice(data)
         m.setErr(err)
     } else if val.Kind() == reflect.Ptr {
-        sub, ok := data.(*tempTable)
+        sub, ok := data.(*SubQuery)
         if ok == false {
             m.setErr(errors.New("data is not a subquery"))
         } else {
             isSubQuery = true
-            subQuery = sub
+            subq = sub
         }
     } else {
         m.setErr(errors.New("data must be struct or slice of struct"))
@@ -120,13 +120,13 @@ func (m Query[T]) insert(ignore bool, data interface{}, tableFieldAddrs []interf
 
     var insertSql, updateStr string
     var bindings []interface{}
-    if isSubQuery && subQuery != nil {
+    if isSubQuery && subq != nil {
         insertSql = m.gennerateInsertSql(validFieldNames, 0)
         if insertSql != "" {
             insertSql += " "
         }
-        insertSql += subQuery.raw
-        bindings = subQuery.bindings
+        insertSql += subq.raw
+        bindings = subq.bindings
     } else {
         for k, v := range structFields {
             if _, ok := validFieldNameMap[v]; ok {

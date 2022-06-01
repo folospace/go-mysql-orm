@@ -2,7 +2,7 @@ package orm
 
 import "database/sql"
 
-type tempTable struct {
+type SubQuery struct {
     raw      string
     bindings []interface{}
     dbName   string
@@ -11,14 +11,14 @@ type tempTable struct {
     err      error
 }
 
-func (tempTable) TableName() string {
+func (SubQuery) TableName() string {
     return "sub"
 }
 
-func (m tempTable) DatabaseName() string {
+func (m SubQuery) DatabaseName() string {
     return m.dbName
 }
 
-func (m tempTable) Error() error {
+func (m SubQuery) Error() error {
     return m.err
 }

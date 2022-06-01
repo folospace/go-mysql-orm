@@ -17,9 +17,9 @@ var findAutoIncrementRegex = regexp.MustCompile("(.+) AUTO_INCREMENT")
 var findNotNullRegex = regexp.MustCompile("(.+) NOT NULL")
 var findNullRegex = regexp.MustCompile("(.+) NULL")
 
-func CreateStructFromTable(table Table) error {
-
-    dbColumns, err := getTableDbColumns(table)
+func CreateStructFromTable[T Table](queryTable Query[T]) error {
+    table := queryTable.TableInterface()
+    dbColumns, err := getTableDbColumns(queryTable)
     if err != nil {
         return err
     }
@@ -73,7 +73,7 @@ func CreateStructFromTable(table Table) error {
         structLines = append(structLines, line)
     }
 
-    structFile := "" //table.Query().currentFilename()
+    structFile := queryTable.curFileName
 
     fileBytes, err := ioutil.ReadFile(structFile)
     if err != nil {
@@ -125,10 +125,11 @@ func getStructFieldTypeStringByDBType(dbType string) string {
     return "string"
 }
 
-func getSqlSegments(table Table) ([]string, error) {
+func getSqlSegments[T Table](query Query[T]) ([]string, error) {
+    table := query.TableInterface()
     var res map[string]string
-    //err := table.Query().SelectRaw(&res, "show create table "+table.TableName()).Err
-    var err error
+
+    err := query.Raw("show create table " + table.TableName()).GetTo(&res).Err
     if err != nil {
         return nil, err
     }
@@ -147,8 +148,8 @@ func getSqlSegments(table Table) ([]string, error) {
     return sqlSegments, nil
 }
 
-func getTableDbColumns(table Table) ([]dBColumn, error) {
-    sqlSegments, err := getSqlSegments(table)
+func getTableDbColumns[T Table](query Query[T]) ([]dBColumn, error) {
+    sqlSegments, err := getSqlSegments(query)
     if err != nil {
         return nil, err
     }
