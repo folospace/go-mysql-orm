@@ -8,14 +8,18 @@ import (
 )
 
 func (m Query[T]) Get() (T, QueryResult) {
-    return m.T, QueryResult{}
+    ret := new(T)
+    res := m.Limit(1).GetTo(ret)
+    return *ret, res
 }
 
 func (m Query[T]) GetList() ([]T, QueryResult) {
-    return make([]T, 0), QueryResult{}
+    ret := make([]T, 0)
+    res := m.GetTo(&ret)
+    return ret, res
 }
 
-func (m Query[T]) GetTo(dest interface{}) QueryResult {
+func (m Query[T]) GetTo(destPtr interface{}) QueryResult {
     tempTable := m.generateSelectQuery(m.columns...)
 
     m.result.PrepareSql = tempTable.raw
@@ -44,7 +48,7 @@ func (m Query[T]) GetTo(dest interface{}) QueryResult {
         return m.result
     }
 
-    m.result.Err = m.scanRows(dest, rows)
+    m.result.Err = m.scanRows(destPtr, rows)
     return m.result
 }
 

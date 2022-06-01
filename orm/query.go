@@ -29,7 +29,7 @@ type Query[T Table] struct {
 
 func NewQuery[T Table](t T, db *sql.DB) Query[T] {
     q := Query[T]{T: t, db: db}
-    return q.FromTable(t)
+    return q.FromTable(interface{}(&t).(Table))
 }
 
 func (m Query[T]) UseDB(db *sql.DB) Query[T] {
