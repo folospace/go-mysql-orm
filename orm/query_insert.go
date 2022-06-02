@@ -18,12 +18,12 @@ func (m Query[T]) Inserts(data []T, tableFieldAddrs ...interface{}) QueryResult 
 }
 
 //insert ignore ... // on duplicate key update ...
-func (m Query[T]) InsertsIgnore(data []T, tableFieldAddrs []interface{}, updates ...UpdateColumn) QueryResult {
-    return m.insert(true, data, tableFieldAddrs, updates)
+func (m Query[T]) InsertsIgnore(data []T, tableFieldPtrs []interface{}, updates ...UpdateColumn) QueryResult {
+    return m.insert(true, data, tableFieldPtrs, updates)
 }
 
-func (m Query[T]) InsertSubquery(data SubQuery, tableFieldAddrs []interface{}, updates ...UpdateColumn) QueryResult {
-    return m.insert(true, data, tableFieldAddrs, updates)
+func (m Query[T]) InsertSubquery(data *SubQuery, tableFieldPtrs []interface{}, updates ...UpdateColumn) QueryResult {
+    return m.insert(true, data, tableFieldPtrs, updates)
 }
 
 func (m Query[T]) gennerateInsertSql(InsertColumns []string, rowCount int) string {
@@ -108,12 +108,12 @@ func (m Query[T]) insert(ignore bool, data interface{}, tableFieldAddrs []interf
         structDefaults, err = getStructFieldWithDefaultTime(val.Index(0).Interface())
         m.setErr(err)
     } else if val.Kind() == reflect.Ptr {
-        sub, ok := data.(SubQuery)
+        sub, ok := data.(*SubQuery)
         if ok == false {
             m.setErr(errors.New("data is not a subquery"))
         } else {
             isSubQuery = true
-            subq = &sub
+            subq = sub
         }
     } else {
         m.setErr(errors.New("data must be struct or slice of struct"))

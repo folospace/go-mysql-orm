@@ -4,7 +4,7 @@ import (
     "strings"
 )
 
-func (m Query[T]) SubQuery() SubQuery {
+func (m Query[T]) SubQuery() *SubQuery {
     tempTable := m.generateSelectQuery(m.columns...)
 
     tempTable.db = m.db
@@ -12,7 +12,7 @@ func (m Query[T]) SubQuery() SubQuery {
     tempTable.dbName = m.tables[0].table.DatabaseName()
     tempTable.err = m.result.Err
 
-    return tempTable
+    return &tempTable
 }
 
 func (m Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {

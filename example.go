@@ -103,37 +103,29 @@ func main() {
             return query.Where(&UserTable.T.Id, &OrderTable.T.UserId)
         }).Where(&OrderTable.T.OrderAmount, 100).
             Select(UserTable.AllCols()).Gets()
-
-        {
-            //transaction
-            _ = UserTable.Transaction(func(tx *sql.Tx) error {
-                newId := UserTable.UseTx(tx).Insert(User{Name: "john"}).LastInsertId //insert
-                fmt.Println(newId)
-                return errors.New("I want rollback") //rollback
-            })
-        }
-
-        //subquery
-        subquery := UserTable.Query().Limit(5).SelectSub(&UserTable.Id)
-        {
-            //join subquery
-            var data []Order
-
-            //select * from order join (select id from user limit 5) sub on order.user_id=sub.id
-            OrderTable.Query().Join(subquery, func(join *orm.Query) {
-                join.Where(&OrderTable.UserId, orm.Raw("sub.id"))
-            }).Select(&data)
-        }
-        {
-            var data []User
-            //select * from (subquery)
-            subquery.Query().Select(&data)
-            UserTable.Query().FromTable(subquery).Select(&data)
-
-            //select * from user where id in (subquery)
-            UserTable.Query().Where(&UserTable.Id, orm.WhereIn, subquery).Select(&data)
-
-            //insert ingore into user (id) select id from user limit 5 on duplicate key update name="change selected users' name"
-            UserTable.Query().InsertIgnore(subquery, []interface{}{&UserTable.Id}, orm.UpdateColumn{Column: &UserTable.Name, Val: "change selected users' name"})
-        }
     }
+    {
+        //transaction
+        _ = UserTable.Transaction(func(tx *sql.Tx) error {
+            newId := UserTable.UseTx(tx).Insert(User{Name: "john"}).LastInsertId //insert
+            fmt.Println(newId)
+            return errors.New("I want rollback") //rollback
+        })
+    }
+
+    {
+        //subquery
+        subquery := UserTable.Where(&UserTable.T.Id, 1).SubQuery()
+
+        //where in suquery
+        UserTable.Where(&UserTable.T.Id, orm.WhereIn, subquery).Gets()
+
+        //insert subquery
+        UserTable.InsertSubquery(subquery, nil)
+
+        //join subquery
+        UserTable.Join(subquery, func(query orm.Query[User]) orm.Query[User] {
+            return query.Where(&UserTable.T.Id, orm.Raw("sub.id"))
+        }).Gets()
+    }
+}
