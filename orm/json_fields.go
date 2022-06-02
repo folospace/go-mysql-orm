@@ -2,7 +2,6 @@ package orm
 
 import (
     "errors"
-    "fmt"
     "reflect"
     "strconv"
     "strings"
@@ -181,9 +180,6 @@ func getStructFieldWithDefaultTime(obj interface{}) (map[int]interface{}, error)
 
         v := tableStruct.Field(i)
         if v.CanInterface() {
-            if tableStructType.Field(i).Tag.Get("json") == "created_at" {
-                fmt.Println(111)
-            }
             if _, ok := v.Interface().(time.Time); ok {
                 if strings.Contains(strings.ToLower(defaultVar), "current_timestamp") {
                     ret[i] = time.Now()
@@ -191,6 +187,5 @@ func getStructFieldWithDefaultTime(obj interface{}) (map[int]interface{}, error)
             }
         }
     }
-    fmt.Println(ret)
     return ret, nil
 }

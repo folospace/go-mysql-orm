@@ -11,8 +11,6 @@ import (
 
 type Raw string
 
-var AllCols = "*"
-
 type Query[T Table] struct {
     db          *sql.DB
     tx          *sql.Tx
@@ -40,6 +38,10 @@ func NewQuery[T Table](t T, db *sql.DB) Query[T] {
 
 func (m Query[T]) TableInterface() Table {
     return interface{}(m.T).(Table)
+}
+
+func (m Query[T]) AllCols() string {
+    return m.tables[0].getAliasOrTableName() + ".*"
 }
 
 func (m Query[T]) UseDB(db *sql.DB) Query[T] {

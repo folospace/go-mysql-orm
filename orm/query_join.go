@@ -4,17 +4,17 @@ import (
     "strings"
 )
 
-func (m Query[T]) Join(table Table, where func(join *Query[T]), alias ...string) Query[T] {
+func (m Query[T]) Join(table Table, where func(join Query[T]) Query[T], alias ...string) Query[T] {
     return m.join(JoinTypeInner, table, where, alias...)
 }
-func (m Query[T]) LeftJoin(table Table, where func(join *Query[T]), alias ...string) Query[T] {
+func (m Query[T]) LeftJoin(table Table, where func(join Query[T]) Query[T], alias ...string) Query[T] {
     return m.join(JoinTypeLeft, table, where, alias...)
 }
-func (m Query[T]) RightJoin(table Table, where func(join *Query[T]), alias ...string) Query[T] {
+func (m Query[T]) RightJoin(table Table, where func(join Query[T]) Query[T], alias ...string) Query[T] {
     return m.join(JoinTypeRight, table, where, alias...)
 }
 
-func (m Query[T]) join(joinType JoinType, table Table, wheref func(*Query[T]), alias ...string) Query[T] {
+func (m Query[T]) join(joinType JoinType, table Table, wheref func(Query[T]) Query[T], alias ...string) Query[T] {
     newTable, err := m.parseTable(table)
     if err != nil {
         return m.setErr(err)
@@ -28,8 +28,8 @@ func (m Query[T]) join(joinType JoinType, table Table, wheref func(*Query[T]), a
 
     newTable.joinType = joinType
     m.tables = append(m.tables, newTable)
-    newTable.joinCondition = m.generateWhereGroup(wheref)
-    return m
+    m.tables[len(m.tables)-1].joinCondition, err = m.generateWhereGroup(wheref)
+    return m.setErr(err)
 }
 
 func (m Query[T]) generateTableAndJoinStr(tables []*queryTable, bindings *[]interface{}) string {

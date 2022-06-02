@@ -43,6 +43,13 @@ func (Order) DatabaseName() string {
 }
 
 func main() {
+    {
+        //create db table from go struct
+        _, _ = orm.CreateTableFromStruct(UserTable)
+        //create go struct from db table
+        _ = orm.CreateStructFromTable(UserTable)
+    }
+
     //query select
     {
         //get first user as struct
@@ -75,7 +82,7 @@ func main() {
 
         //get users map key by name
         var usersMapkeyByName map[string][]User
-        UserTable.Select(&UserTable.T.Name, orm.AllCols).GetTo(&usersMapkeyByName)
+        UserTable.Select(&UserTable.T.Name, UserTable.AllCols()).GetTo(&usersMapkeyByName)
     }
 
     //query update and delete and insert
@@ -90,49 +97,43 @@ func main() {
         _ = UserTable.Insert(User{Name: "han"}).LastInsertId //insert one row and get id
     }
 
-    //query join and where
+    //query join
     {
-        UserTable.Join(OrderTable.T, func(query *orm.Query[User]) {
-            query.Where(&UserTable.T.Id, &OrderTable.T.UserId)
-        })
-    {
-    }
+        UserTable.Join(OrderTable.T, func(query orm.Query[User]) orm.Query[User] {
+            return query.Where(&UserTable.T.Id, &OrderTable.T.UserId)
+        }).Where(&OrderTable.T.OrderAmount, 100).
+            Select(UserTable.AllCols()).Gets()
 
-    {
-        //transaction
-        var data User
-        _ = UserTable.Query().Transaction(func(db *orm.Query) error {
-            db.FromTable(UserTable).Insert(User{Name: "john"})                        //insert
-            db.FromTable(UserTable).OrderByDesc(&UserTable.Id).Limit(1).Select(&data) //select
-            return errors.New("I want rollback")                                      //rollback
-        })
-    }
+        {
+            //transaction
+            _ = UserTable.Transaction(func(tx *sql.Tx) error {
+                newId := UserTable.UseTx(tx).Insert(User{Name: "john"}).LastInsertId //insert
+                fmt.Println(newId)
+                return errors.New("I want rollback") //rollback
+            })
+        }
 
-    //subquery
-    subquery := UserTable.Query().Limit(5).SelectSub(&UserTable.Id)
-    {
-        //join subquery
-        var data []Order
+        //subquery
+        subquery := UserTable.Query().Limit(5).SelectSub(&UserTable.Id)
+        {
+            //join subquery
+            var data []Order
 
-        //select * from order join (select id from user limit 5) sub on order.user_id=sub.id
-        OrderTable.Query().Join(subquery, func(join *orm.Query) {
-            join.Where(&OrderTable.UserId, orm.Raw("sub.id"))
-        }).Select(&data)
-    }
-    {
-        var data []User
-        //select * from (subquery)
-        subquery.Query().Select(&data)
-        UserTable.Query().FromTable(subquery).Select(&data)
+            //select * from order join (select id from user limit 5) sub on order.user_id=sub.id
+            OrderTable.Query().Join(subquery, func(join *orm.Query) {
+                join.Where(&OrderTable.UserId, orm.Raw("sub.id"))
+            }).Select(&data)
+        }
+        {
+            var data []User
+            //select * from (subquery)
+            subquery.Query().Select(&data)
+            UserTable.Query().FromTable(subquery).Select(&data)
 
-        //select * from user where id in (subquery)
-        UserTable.Query().Where(&UserTable.Id, orm.WhereIn, subquery).Select(&data)
+            //select * from user where id in (subquery)
+            UserTable.Query().Where(&UserTable.Id, orm.WhereIn, subquery).Select(&data)
 
-        //insert ingore into user (id) select id from user limit 5 on duplicate key update name="change selected users' name"
-        UserTable.Query().InsertIgnore(subquery, []interface{}{&UserTable.Id}, orm.UpdateColumn{Column: &UserTable.Name, Val: "change selected users' name"})
+            //insert ingore into user (id) select id from user limit 5 on duplicate key update name="change selected users' name"
+            UserTable.Query().InsertIgnore(subquery, []interface{}{&UserTable.Id}, orm.UpdateColumn{Column: &UserTable.Name, Val: "change selected users' name"})
+        }
     }
-    {
-        _, _ = orm.CreateTableFromStruct(UserTable)
-        _ = orm.CreateStructFromTable(UserTable)
-    }
-}

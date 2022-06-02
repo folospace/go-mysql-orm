@@ -41,7 +41,6 @@ func (m Query[T]) where(isOr bool, column interface{}, vals ...interface{}) Quer
         if err != nil {
             return m.setErr(err)
         }
-
         operator := "="
         var val interface{}
         if len(vals) == 2 {
@@ -140,7 +139,8 @@ func (m Query[T]) generateWhereStr(wheres []where, bindings *[]interface{}) stri
 //&obj.id, 1
 //&obj.id, "=", 1
 func (m Query[T]) Where(column interface{}, vals ...interface{}) Query[T] {
-    return m.where(false, column, vals...)
+    t := m.where(false, column, vals...)
+    return t
 }
 
 //"id=1"
@@ -153,20 +153,20 @@ func (m Query[T]) OrWhere(column interface{}, vals ...interface{}) Query[T] {
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m Query[T]) WhereFunc(f func(*Query[T])) Query[T] {
+func (m Query[T]) WhereFunc(f func(Query[T]) Query[T]) Query[T] {
     return m.whereGroup(false, f)
 }
 
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m Query[T]) OrWhereFunc(f func(*Query[T])) Query[T] {
+func (m Query[T]) OrWhereFunc(f func(Query[T]) Query[T]) Query[T] {
     return m.whereGroup(true, f)
 }
 
-func (m Query[T]) whereGroup(isOr bool, f func(*Query[T])) Query[T] {
-    temp := m.generateWhereGroup(f)
-
+func (m Query[T]) whereGroup(isOr bool, f func(Query[T]) Query[T]) Query[T] {
+    temp, err := m.generateWhereGroup(f)
+    m.setErr(err)
     if len(temp.SubWheres) > 0 {
         temp.IsOr = isOr
         m.wheres = append(m.wheres, temp)
@@ -174,14 +174,15 @@ func (m Query[T]) whereGroup(isOr bool, f func(*Query[T])) Query[T] {
     return m
 }
 
-func (m Query[T]) generateWhereGroup(f func(*Query[T])) where {
+func (m Query[T]) generateWhereGroup(f func(Query[T]) Query[T]) (where, error) {
     start := len(m.wheres)
-    f(&m)
-    newWheres := m.wheres[start:]
+    nq := f(m)
+    newWheres := nq.wheres[start:]
+
     if len(newWheres) > 0 {
         subwheres := make([]where, 0)
         m.wheres = m.wheres[:start]
-        return where{SubWheres: append(subwheres, newWheres...)}
+        return where{SubWheres: append(subwheres, newWheres...)}, nq.result.Err
     }
-    return where{}
+    return where{}, nq.result.Err
 }
