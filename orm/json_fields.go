@@ -2,10 +2,12 @@ package orm
 
 import (
     "errors"
+    "fmt"
     "reflect"
     "strconv"
     "strings"
     "sync"
+    "time"
 )
 
 var structFieldsCache sync.Map
@@ -159,5 +161,36 @@ func getStructFieldNameSlice(obj interface{}) ([]string, error) {
     }
 
     setFieldsCache(tableStructType.String(), ret)
+    return ret, nil
+}
+
+func getStructFieldWithDefaultTime(obj interface{}) (map[int]interface{}, error) {
+    tableStructType := reflect.TypeOf(obj)
+
+    tableStruct := reflect.ValueOf(obj)
+    if tableStruct.Kind() != reflect.Struct {
+        return nil, errors.New("obj must be struct")
+    }
+    ret := make(map[int]interface{})
+
+    for i := 0; i < tableStruct.NumField(); i++ {
+        defaultVar := tableStructType.Field(i).Tag.Get("default")
+        if defaultVar == "" {
+            continue
+        }
+
+        v := tableStruct.Field(i)
+        if v.CanInterface() {
+            if tableStructType.Field(i).Tag.Get("json") == "created_at" {
+                fmt.Println(111)
+            }
+            if _, ok := v.Interface().(time.Time); ok {
+                if strings.Contains(strings.ToLower(defaultVar), "current_timestamp") {
+                    ret[i] = time.Now()
+                }
+            }
+        }
+    }
+    fmt.Println(ret)
     return ret, nil
 }

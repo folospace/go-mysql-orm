@@ -1,17 +1,28 @@
 package orm
 
-import "database/sql"
+import (
+    "database/sql"
+    "errors"
+)
 
-func (m Query[T]) ExecuteRaw(prepareSql string, bindings ...interface{}) QueryResult {
-    m.result.PrepareSql = prepareSql
-    m.result.Bindings = bindings
+//excute raw
+func (m Query[T]) Execute() QueryResult {
+    if m.prepareSql == "" {
+        m.setErr(errors.New("sql not exist"))
+    }
+    if m.result.Err != nil {
+        return m.result
+    }
+
+    m.result.PrepareSql = m.prepareSql
+    m.result.Bindings = m.bindings
 
     var res sql.Result
     var err error
     if m.dbTx() != nil {
-        res, err = m.dbTx().Exec(prepareSql, bindings...)
+        res, err = m.dbTx().Exec(m.prepareSql, m.bindings...)
     } else {
-        res, err = m.DB().Exec(prepareSql, bindings...)
+        res, err = m.DB().Exec(m.prepareSql, m.bindings...)
     }
 
     if err != nil {

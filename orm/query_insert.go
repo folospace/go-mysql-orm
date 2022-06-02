@@ -8,12 +8,21 @@ import (
 )
 
 //tableFieldAddrs: allow insert table columns
-func (m Query[T]) Insert(data interface{}, tableFieldAddrs ...interface{}) QueryResult {
+func (m Query[T]) Insert(data T, tableFieldAddrs ...interface{}) QueryResult {
+    return m.insert(false, []T{data}, tableFieldAddrs, nil)
+}
+
+//tableFieldAddrs: allow insert table columns
+func (m Query[T]) Inserts(data []T, tableFieldAddrs ...interface{}) QueryResult {
     return m.insert(false, data, tableFieldAddrs, nil)
 }
 
 //insert ignore ... // on duplicate key update ...
-func (m Query[T]) InsertIgnore(data interface{}, tableFieldAddrs []interface{}, updates ...UpdateColumn) QueryResult {
+func (m Query[T]) InsertsIgnore(data []T, tableFieldAddrs []interface{}, updates ...UpdateColumn) QueryResult {
+    return m.insert(true, data, tableFieldAddrs, updates)
+}
+
+func (m Query[T]) InsertSubquery(data SubQuery, tableFieldAddrs []interface{}, updates ...UpdateColumn) QueryResult {
     return m.insert(true, data, tableFieldAddrs, updates)
 }
 
@@ -41,19 +50,27 @@ func (m Query[T]) gennerateInsertSql(InsertColumns []string, rowCount int) strin
     }
 }
 
-func (m Query[T]) getInsertBindings(val reflect.Value, isSlice bool, validFieldIndex map[int]struct{}) []interface{} {
+func (m Query[T]) getInsertBindings(val reflect.Value, isSlice bool, validFieldIndex map[int]struct{}, defaults map[int]interface{}) []interface{} {
     var bindings []interface{}
     if isSlice == false {
         for i := 0; i < val.NumField(); i++ {
             if _, ok := validFieldIndex[i]; ok {
-                bindings = append(bindings, val.Field(i).Interface())
+                if defaults[i] != nil && val.Field(i).IsZero() {
+                    bindings = append(bindings, defaults[i])
+                } else {
+                    bindings = append(bindings, val.Field(i).Interface())
+                }
             }
         }
     } else {
         for i := 0; i < val.Len(); i++ {
             for k := 0; k < val.Index(i).NumField(); k++ {
                 if _, ok := validFieldIndex[k]; ok {
-                    bindings = append(bindings, val.Index(i).Field(k).Interface())
+                    if defaults[k] != nil && val.Index(i).Field(k).IsZero() {
+                        bindings = append(bindings, defaults[k])
+                    } else {
+                        bindings = append(bindings, val.Index(i).Field(k).Interface())
+                    }
                 }
             }
         }
@@ -69,6 +86,7 @@ func (m Query[T]) insert(ignore bool, data interface{}, tableFieldAddrs []interf
     var subq *SubQuery
     rowCount := 1
     var structFields []string
+    var structDefaults map[int]interface{}
     if val.Kind() == reflect.Slice {
         rowCount = val.Len()
         if rowCount == 0 {
@@ -81,17 +99,21 @@ func (m Query[T]) insert(ignore bool, data interface{}, tableFieldAddrs []interf
             isSlice = true
             structFields, err = getStructFieldNameSlice(val.Index(0).Interface())
             m.setErr(err)
+            structDefaults, err = getStructFieldWithDefaultTime(val.Index(0).Interface())
+            m.setErr(err)
         }
     } else if val.Kind() == reflect.Struct {
         structFields, err = getStructFieldNameSlice(data)
         m.setErr(err)
+        structDefaults, err = getStructFieldWithDefaultTime(val.Index(0).Interface())
+        m.setErr(err)
     } else if val.Kind() == reflect.Ptr {
-        sub, ok := data.(*SubQuery)
+        sub, ok := data.(SubQuery)
         if ok == false {
             m.setErr(errors.New("data is not a subquery"))
         } else {
             isSubQuery = true
-            subq = sub
+            subq = &sub
         }
     } else {
         m.setErr(errors.New("data must be struct or slice of struct"))
@@ -135,7 +157,7 @@ func (m Query[T]) insert(ignore bool, data interface{}, tableFieldAddrs []interf
             }
         }
         insertSql = m.gennerateInsertSql(InsertColumns, rowCount)
-        bindings = m.getInsertBindings(val, isSlice, validFieldIndex)
+        bindings = m.getInsertBindings(val, isSlice, validFieldIndex, structDefaults)
     }
 
     updateStr = m.generateUpdateStr(updates, &bindings)

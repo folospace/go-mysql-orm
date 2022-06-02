@@ -207,11 +207,11 @@ func (m Query[T]) getTableColumn(i reflect.Value) (*queryTable, string) {
     return nil, ""
 }
 
-func (m Query[T]) setErr(err error) Query[T] {
+func (m *Query[T]) setErr(err error) Query[T] {
     if err != nil {
         m.result.Err = err
     }
-    return m
+    return *m
 }
 
 func (m Query[T]) Limit(limit int) Query[T] {
