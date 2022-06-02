@@ -22,147 +22,127 @@ import (
     _ "github.com/go-sql-driver/mysql"
 )
 
-//mysql db
+//connect mysql db
 var db, _ = sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/mydb?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
 
-//user table 
-var UserTable = new(User)
+//user table model
+var UserTable = orm.NewQuery(User{}, db)
 
 type User struct {
     Id   int    `json:"id"`
     Name string `json:"name"`
 }
-func (m *User) Query() *orm.Query {
-    return new(orm.Query).UseDB(db).FromTable(m)
-}
-func (*User) TableName() string {
+
+func (User) TableName() string {
     return "user"
 }
-func (*User) DatabaseName() string {
+func (User) DatabaseName() string {
     return "mydb"
 }
 ```
-## select query usage
+
+## migrate (create table from struct  | create struct from table)
 ```go
 func main() {
-    {
-        var data User //select one user
-        UserTable.Query().Limit(1).Select(&data)
-    }
-    {
-        var data []User //select users
-        UserTable.Query().Limit(5).Select(&data)
-    }
-    {
-        var data int //select count
-        UserTable.Query().SelectCount(&data)
-    }
-    {
-        var data []int //select user.ids
-        UserTable.Query().Limit(5).Select(&data, &UserTable.Id)
-    }
-    {
-        var data map[int]User //select map[id]User
-        UserTable.Query().Limit(5).Select(&data)
-    }
-    {
-        var data map[int][]User //select map[id][]user
-        UserTable.Query().Limit(5).Select(&data)
-    }
-    {
-        var data map[int]string //select map[id]name
-        UserTable.Query().Limit(5).Select(&data, &UserTable.Id, &UserTable.Name)
-    }
-    {
-        var data []map[string]interface{} //select []map[column_name]column_value
-        UserTable.Query().Limit(5).Select(&data)
-        fmt.Println(data)
-    }
-    {
-        var data map[string]interface{} //select map[column_name]column_value
-        UserTable.Query().SelectRaw(&data, "show create table " + UserTable.TableName())
-        fmt.Println(data)
-    }
-}
+    orm.CreateTableFromStruct(UserTable) //create db table, add new columns if table already exist.
+    orm.CreateStructFromTable(UserTable) //create struct fields in code
+}        
 ```
-## update query
+
+
+## select query usage
 ```go
+    //query select
+    {
+        //get first user as struct
+        user, query := UserTable.Get()
+        fmt.Println(user, query.Sql(), query.Error())
+
+        //get users as struct slice
+        users, query := UserTable.Limit(5).Gets()
+        fmt.Println(users, query.Sql(), query.Error())
+
+        //get user first row as map[string]interface
+        row, query := UserTable.GetRow()
+        fmt.Println(row, query.Sql(), query.Error())
+
+        //get user rows as []map[string]interface
+        rows, query := UserTable.Limit(5).GetRows()
+        fmt.Println(rows, query.Sql(), query.Error())
+
+        //get users count(*)
+        count, query := UserTable.GetCount()
+        fmt.Println(count, query.Sql(), query.Error())
+
+        //get users map key by id
+        var usersKeyById map[int]User
+        UserTable.GetTo(&usersKeyById)
+
+        //get user names map key by id
+        var userNameKeyById map[int]string
+        UserTable.Select(&UserTable.T.Id, &UserTable.T.Name).GetTo(&userNameKeyById)
+
+        //get users map key by name
+        var usersMapkeyByName map[string][]User
+        UserTable.Select(&UserTable.T.Name, UserTable.AllCols()).GetTo(&usersMapkeyByName)
+    }
+```
+
+## update | delete | insert
+```go
+    //query update and delete and insert
     {
         //update user set name="hello" where id=1
-        UserTable.Query().Where(&UserTable.Id, 1).Update(&UserTable.Name, "hello")
-    }
+        UserTable.Where(&UserTable.T.Id, 1).Update(&UserTable.T.Name, "hello")
 
+        //query delete
+        UserTable.Where(&UserTable.T.Id, 1).Delete()
+
+        //query insert
+        _ = UserTable.Insert(User{Name: "han"}).LastInsertId //insert one row and get id
+    }
 ```
 
 ### join and where 
 ```go
-       {
-           //update user join order on user.id=order.user_id 
-           //set order.order_amount=100
-           //where user.id in (1,2)
-           UserTable.Query().Join(OrderTable, func(query *orm.Query) {
-               query.Where(&UserTable.Id, &OrderTable.UserId)
-           }).
-               Where(&UserTable.Id, orm.WhereIn, []int{1,2}). 
-               Update(&OrderTable.OrderAmount, 100)
-       }
+    //query join
+    {
+        UserTable.Join(OrderTable.T, func(query orm.Query[User]) orm.Query[User] {
+            return query.Where(&UserTable.T.Id, &OrderTable.T.UserId)
+        }).Where(&OrderTable.T.OrderAmount, 100).
+            Select(UserTable.AllCols()).Gets()
+    }
 ```
 
-## delete query
-```go
-	//query delete
-	UserTable.Query().Where(&UserTable.Id, 1).Delete()
-```
-
-## insert query
-```go
-	//query insert
-	_ = UserTable.Query().Insert(User{Name: "han"}).LastInsertId //insert one row and get id
-	
-	//insert rows and update column
-	OrderTable.Query().InsertIgnore([]Order{{Id: 1, OrderAmount: 100}, {Id: 2, OrderAmount: 120}}, 
-	[]interface{}{&OrderTable.Id, &OrderTable.OrderAmount},
-        orm.UpdateColumn{ //update order amount if order id exist and amount is zero
-            Column: &OrderTable.OrderAmount,
-            Val:    orm.Raw("if(order_amount, order_amount, values(order_amount))"),
-	})
-```
 
 ## transaction
 ```go
-    //transaction
-    var data User
-    _ = UserTable.Query().Transaction(func(db *orm.Query) error {
-        db.FromTable(UserTable).Insert(User{Name: "john"}) //insert
-        db.FromTable(UserTable).OrderByDesc(&UserTable.Id).Limit(1).Select(&data) //select
-        return errors.New("I want rollback") //rollback
-    }) 
+    {
+        //transaction
+        _ = UserTable.Transaction(func(tx *sql.Tx) error {
+            newId := UserTable.UseTx(tx).Insert(User{Name: "john"}).LastInsertId //insert
+            fmt.Println(newId)
+            return errors.New("I want rollback") //rollback
+        })
+    }
 ```
 
 ## subquery
 ```go
-    //subquery
-    subquery := UserTable.Query().Limit(5).SelectSub(&UserTable.Id)
     {
+        //subquery
+        subquery := UserTable.Where(&UserTable.T.Id, 1).SubQuery()
+
+        //where in suquery
+        UserTable.Where(&UserTable.T.Id, orm.WhereIn, subquery).Gets()
+
+        //insert subquery
+        UserTable.InsertSubquery(subquery, nil)
+
         //join subquery
-        var data []Order
-
-        //select * from order join (select id from user limit 5) sub on order.user_id=sub.id
-        OrderTable.Query().Join(subquery, func(join *orm.Query) {
-            join.Where(&OrderTable.UserId, orm.Raw("sub.id"))
-        }).Select(&data)
-    }
-    {
-        var data []User
-        //select * from (subquery)
-        subquery.Query().Select(&data)
-        UserTable.Query().FromTable(subquery).Select(&data)
-
-        //select * from user where id in (subquery)
-        UserTable.Query().Where(&UserTable.Id, orm.WhereIn, subquery).Select(&data)
-
-        //insert ingore into user (id) select id from user limit 5 on duplicate key update name="change selected users' name"
-        UserTable.Query().InsertIgnore(subquery, []interface{}{&UserTable.Id}, orm.UpdateColumn{Column: &UserTable.Name, Val: "change selected users' name"})
+        UserTable.Join(subquery, func(query orm.Query[User]) orm.Query[User] {
+            return query.Where(&UserTable.T.Id, orm.Raw("sub.id"))
+        }).Gets()
     }
 ```
 
@@ -176,8 +156,9 @@ func main() {
         }
         
         var userOrders map[int][]Order
-        OrderTable.Query().Where(&OrderTable.UserId, orm.WhereIn, userIds).
-            Select(&userOrders, &OrderTable.UserId, orm.AllCols)
+        OrderTable.Where(&OrderTable.UserId, orm.WhereIn, userIds).
+            Select(&OrderTable.UserId, OrderTable.AllCols()). 
+            GetTo(&userOrders)
         
         for k := range users {
             users[k].Orders = userOrders[users[k].Id]
@@ -185,15 +166,7 @@ func main() {
     }   
 ```
 
-## migrate (create table from struct  | create struct from table)
-```go
-func main() {
-    orm.CreateTableFromStruct(UserTable) //create db table, add new columns if table already exist.
-    orm.CreateStructFromTable(UserTable) //create struct fields in code
-}        
-```
-
-#### details about migration 
+## details about migration 
 - use json tag by default
 - orm tag will override json tag
 - default: column default value
