@@ -65,7 +65,7 @@ func main() {
         fmt.Println(users, query.Sql(), query.Error())
 
         //get users by primary ids
-        users, query = UserTable.Limit(5).Gets(1, 2, 3)
+        users, query = UserTable.Gets(1, 2, 3)
         fmt.Println(users, query.Sql(), query.Error())
 
         //get user first row as map[string]interface
