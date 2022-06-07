@@ -41,7 +41,7 @@ func (User) DatabaseName() string {
 }
 ```
 
-## migrate (create table from struct  | create struct from table)
+## migration (create table from struct  | create struct from table)
 ```go
 func main() {
     orm.CreateTableFromStruct(UserTable) //create db table, add new columns if table already exist.
@@ -174,7 +174,7 @@ func main() {
     }   
 ```
 
-## details about migration 
+## about migration 
 - use json tag by default
 - orm tag will override json tag
 - default: column default value
