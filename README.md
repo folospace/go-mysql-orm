@@ -149,17 +149,19 @@ func main() {
 
 ## Relation (has many | belongs to)
 ```go
-    //each user has many orders
+    users, _ := UserTable.Limit(5).Gets()
     var userIds []int
     for _, v := range users {
         userIds = append(userIds, v.Id)
     }
-    
+
+    //each user has many orders
     var userOrders map[int][]Order
     OrderTable.Where(&OrderTable.UserId, orm.WhereIn, userIds).
         Select(&OrderTable.UserId, OrderTable.AllCols()). 
         GetTo(&userOrders)
     
+    //set user has orders
     for k := range users {
         users[k].Orders = userOrders[users[k].Id]
     }
