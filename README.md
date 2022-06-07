@@ -9,7 +9,7 @@ Completed Features:
 - transaction  
 - select (update | insert) with subquery
 - join (left join | right join) table
-- support golang generics to make select-query more easily
+- support golang generics to make query more easily
 
 ## Get Started
 ```go
