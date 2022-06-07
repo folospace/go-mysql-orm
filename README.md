@@ -56,31 +56,24 @@ func main() {
     {
         //get first user as struct
         user, query := UserTable.Get()
-        fmt.Println(user, query.Sql(), query.Error())
         
         //get user where primary id = 1
         user, query = UserTable.Get(1)
-        fmt.Println(user, query.Sql(), query.Error())
 
         //get users as struct slice
         users, query := UserTable.Limit(5).Gets()
-        fmt.Println(users, query.Sql(), query.Error())
         
         //get users by primary ids
         users, query = UserTable.Gets(1,2,3)
-        fmt.Println(users, query.Sql(), query.Error())
 
         //get user first row as map[string]interface
         row, query := UserTable.GetRow()
-        fmt.Println(row, query.Sql(), query.Error())
 
         //get user rows as []map[string]interface
         rows, query := UserTable.Limit(5).GetRows()
-        fmt.Println(rows, query.Sql(), query.Error())
 
         //get users count(*)
         count, query := UserTable.GetCount()
-        fmt.Println(count, query.Sql(), query.Error())
 
         //get users map key by id
         var usersKeyById map[int]User
