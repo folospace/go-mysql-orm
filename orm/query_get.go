@@ -41,7 +41,7 @@ func (m Query[T]) GetRow() (map[string]interface{}, QueryResult) {
 //get slice row
 func (m Query[T]) GetRows() ([]map[string]interface{}, QueryResult) {
     var ret []map[string]interface{}
-    res := m.Limit(1).GetTo(&ret)
+    res := m.GetTo(&ret)
     return ret, res
 }
 

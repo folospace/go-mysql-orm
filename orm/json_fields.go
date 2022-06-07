@@ -142,7 +142,7 @@ func getStructFieldNameSlice(obj interface{}) ([]string, error) {
     for i := 0; i < tableStruct.NumField(); i++ {
         ormTag := strings.Split(tableStructType.Field(i).Tag.Get("orm"), ",")[0]
         if ormTag == "-" {
-            continue
+            ormTag = ""
         }
 
         if ormTag != "" {

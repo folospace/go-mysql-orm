@@ -12,22 +12,23 @@ import (
 type Raw string
 
 type Query[T Table] struct {
-    db          *sql.DB
-    tx          *sql.Tx
-    tables      []*queryTable
-    wheres      []where
-    result      QueryResult
-    limit       int
-    offset      int
-    orderbys    []string
-    forUpdate   SelectForUpdateType
-    T           *T
-    columns     []interface{}
-    prepareSql  string
-    bindings    []interface{}
-    groupBy     []interface{}
-    having      []where
-    curFileName string
+    db           *sql.DB
+    tx           *sql.Tx
+    tables       []*queryTable
+    wheres       []where
+    result       QueryResult
+    limit        int
+    offset       int
+    partitionbys []string
+    orderbys     []string
+    forUpdate    SelectForUpdateType
+    T            *T
+    columns      []interface{}
+    prepareSql   string
+    bindings     []interface{}
+    groupBy      []interface{}
+    having       []where
+    curFileName  string
 }
 
 func NewQuery[T Table](t T, db *sql.DB) Query[T] {
@@ -258,6 +259,14 @@ func (m Query[T]) orHaving(column interface{}, vals ...interface{}) Query[T] {
     return newQuery
 }
 
+func (m Query[T]) PartitionBy(column interface{}) Query[T] {
+    val, err := m.parseColumn(column)
+    if err != nil {
+        return m.setErr(err)
+    }
+    m.partitionbys = append(m.partitionbys, val)
+    return m
+}
 func (m Query[T]) OrderBy(column interface{}) Query[T] {
     val, err := m.parseColumn(column)
     if err != nil {

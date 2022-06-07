@@ -91,6 +91,13 @@ func main() {
         //get users map key by name
         var usersMapkeyByName map[string][]User
         UserTable.Select(&UserTable.T.Name, UserTable.AllCols()).GetTo(&usersMapkeyByName)
+
+        //select orders (where user_id=1) with rank by order_amount
+        OrderTable.Where(&OrderTable.T.UserId, 1).
+            Select(OrderTable.AllCols()).
+            SelectRank(func(sub orm.Query[Order]) orm.Query[Order] {
+                return sub.OrderByDesc(&OrderTable.T.OrderAmount)
+            }).GetRows()
     }
 
     //query update and delete and insert
