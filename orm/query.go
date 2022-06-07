@@ -20,7 +20,7 @@ type Query[T Table] struct {
     limit       int
     offset      int
     orderbys    []string
-    forUpdate   bool
+    forUpdate   SelectForUpdateType
     T           *T
     columns     []interface{}
     prepareSql  string

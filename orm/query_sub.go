@@ -47,9 +47,7 @@ func (m Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
         orderLimitOffsetStr := m.getOrderAndLimitSqlStr()
 
         rawSql := "select " + selectStr
-        if m.forUpdate {
-            rawSql += " for update"
-        }
+
         if tableStr != "" {
             rawSql += " from " + tableStr
             if whereStr != "" {
@@ -66,6 +64,10 @@ func (m Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
 
         if orderLimitOffsetStr != "" {
             rawSql += " " + orderLimitOffsetStr
+        }
+
+        if m.forUpdate != "" {
+            rawSql += " " + string(m.forUpdate)
         }
 
         ret.raw = rawSql
