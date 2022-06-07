@@ -150,21 +150,19 @@ func main() {
 ## Relation (has many | belongs to)
 ```go
     //each user has many orders
-    func (*User) LoadOrders(users []User) {
-        var userIds []int
-        for _, v := range users {
-            userIds = append(userIds, v.Id)
-        }
-        
-        var userOrders map[int][]Order
-        OrderTable.Where(&OrderTable.UserId, orm.WhereIn, userIds).
-            Select(&OrderTable.UserId, OrderTable.AllCols()). 
-            GetTo(&userOrders)
-        
-        for k := range users {
-            users[k].Orders = userOrders[users[k].Id]
-        }
-    }   
+    var userIds []int
+    for _, v := range users {
+        userIds = append(userIds, v.Id)
+    }
+    
+    var userOrders map[int][]Order
+    OrderTable.Where(&OrderTable.UserId, orm.WhereIn, userIds).
+        Select(&OrderTable.UserId, OrderTable.AllCols()). 
+        GetTo(&userOrders)
+    
+    for k := range users {
+        users[k].Orders = userOrders[users[k].Id]
+    }
 ```
 
 ## about migration 
