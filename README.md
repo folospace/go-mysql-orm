@@ -2,16 +2,13 @@
 A golang package dedicated to simplify developing with mysql database. 
 
 Completed Features:
+- try to avoid using raw strings.
 - create mysql table from golang struct
 - create golang struct from mysql table
-- select to kinds of go types (struct,slice,map)
 - update query, insert query, delete query
 - transaction  
 - select (update | insert) with subquery
 - join (left join | right join) table
-- avoid using raw strings when query.
-
-Planning Features:
 - support golang generics to make select-query more easily
 
 ## Get Started
