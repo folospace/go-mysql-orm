@@ -88,22 +88,9 @@ func (m Query[T]) FromTable(table Table, alias ...string) Query[T] {
 }
 
 func (m Query[T]) parseTable(table Table) (*queryTable, error) {
-    cached := getTableFromCache(table)
-    if cached != nil {
-        return cached, nil
-    }
-    tableStructAddr := reflect.ValueOf(table)
-    if tableStructAddr.Kind() != reflect.Ptr {
-        return nil, errors.New("params must be address of variable")
-    }
-    //reset query vars
-    tableStruct := tableStructAddr.Elem()
-    if tableStruct.Kind() != reflect.Struct {
-        return nil, errors.New("obj must be struct")
-    }
-
-    temp, ok := table.(*SubQuery)
+    temp, ok := table.(SubQuery)
     var newTable *queryTable
+
     if ok {
         newTable = &queryTable{
             table:    table,
@@ -111,6 +98,20 @@ func (m Query[T]) parseTable(table Table) (*queryTable, error) {
             bindings: temp.bindings,
         }
     } else {
+        cached := getTableFromCache(table)
+        if cached != nil {
+            return cached, nil
+        }
+        tableStructAddr := reflect.ValueOf(table)
+        if tableStructAddr.Kind() != reflect.Ptr {
+            return nil, errors.New("params must be address of variable")
+        }
+        //reset query vars
+        tableStruct := tableStructAddr.Elem()
+        if tableStruct.Kind() != reflect.Struct {
+            return nil, errors.New("obj must be struct")
+        }
+
         tableStructType := reflect.TypeOf(table).Elem()
         ormFields := make(map[interface{}]string)
 
