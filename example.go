@@ -97,7 +97,7 @@ func main() {
             Select(OrderTable.AllCols()).
             SelectRank(func(sub orm.Query[Order]) orm.Query[Order] {
                 return sub.OrderByDesc(&OrderTable.T.OrderAmount)
-            }).GetRows()
+            }, "order_amount_rank").GetRows()
     }
 
     //query update and delete and insert

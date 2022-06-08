@@ -10,7 +10,7 @@ const (
     SelectForUpdateTypeSkipLocked SelectForUpdateType = "for update skip locked"
 )
 
-func (m Query[T]) SelectRank(f func(query Query[T]) Query[T], alias ...string) Query[T] {
+func (m Query[T]) SelectRank(f func(query Query[T]) Query[T], alias string) Query[T] {
     windowFunc := "rank()"
     partitionStart := len(m.partitionbys)
     orderStart := len(m.orderbys)
@@ -29,12 +29,8 @@ func (m Query[T]) SelectRank(f func(query Query[T]) Query[T], alias ...string) Q
     }
     newSelect += ")"
 
-    if len(alias) > 0 {
-        newSelect += " as " + alias[0]
-    } else {
-        as := "r"
-        newSelect += " as " + as
-    }
+    newSelect += " as " + alias
+
     m.columns = append(m.columns, newSelect)
     return m
 }
