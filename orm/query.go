@@ -41,6 +41,10 @@ func NewQuery[T Table](t T, db *sql.DB) Query[T] {
 	return q.FromTable(q.TableInterface())
 }
 
+func NewQuerySub(subquery SubQuery) Query[SubQuery] {
+	return NewQuery(subquery, subquery.db)
+}
+
 func NewQueryRaw(db *sql.DB, tableName ...string) Query[SubQuery] {
 	sq := SubQuery{}
 	if len(tableName) > 0 {
@@ -100,10 +104,15 @@ func (m Query[T]) FromTable(table Table, alias ...string) Query[T] {
 }
 
 func (m Query[T]) parseTable(table Table) (*queryTable, error) {
-	temp, ok := table.(SubQuery)
 	var newTable *queryTable
 
-	if ok {
+	if temp, ok := table.(SubQuery); ok {
+		newTable = &queryTable{
+			table:    table,
+			rawSql:   temp.raw,
+			bindings: temp.bindings,
+		}
+	} else if temp, ok := table.(*SubQuery); ok {
 		newTable = &queryTable{
 			table:    table,
 			rawSql:   temp.raw,

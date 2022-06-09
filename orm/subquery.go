@@ -40,7 +40,7 @@ func (m SubQuery) Error() error {
 	return m.err
 }
 
-func (m SubQuery) ToSql() string {
+func (m SubQuery) Sql() string {
 	params := make([]string, len(m.bindings))
 	for k, v := range m.bindings {
 		params[k] = varToString(v)
