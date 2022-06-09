@@ -5,14 +5,31 @@ import (
 )
 
 func (m Query[T]) SubQuery() SubQuery {
-    tempTable := m.generateSelectQuery(m.columns...)
+    if m.self != nil {
+        cte := m.self
+        m.self = nil
 
-    tempTable.db = m.db
-    tempTable.tx = m.tx
-    tempTable.dbName = m.tables[0].table.DatabaseName()
-    tempTable.err = m.result.Err
+        mt := cte.WithRecursiveCte(m.SubQuery(), cte.T.TableName())
+        tempTable := mt.generateSelectQuery(mt.columns...)
 
-    return tempTable
+        tempTable.db = mt.db
+        tempTable.tx = mt.tx
+        tempTable.dbName = mt.tables[0].table.DatabaseName()
+        tempTable.err = mt.result.Err
+
+        return tempTable
+
+    } else {
+        mt := m
+        tempTable := mt.generateSelectQuery(mt.columns...)
+
+        tempTable.db = mt.db
+        tempTable.tx = mt.tx
+        tempTable.dbName = mt.tables[0].table.DatabaseName()
+        tempTable.err = mt.result.Err
+
+        return tempTable
+    }
 }
 
 func (m Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {

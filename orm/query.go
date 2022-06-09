@@ -32,6 +32,7 @@ type Query[T Table] struct {
     unions       []SubQuery
     withCtes     []SubQuery
     windows      []SubQuery
+    self         *Query[SubQuery]
 }
 
 func NewQuery[T Table](t T, db *sql.DB) Query[T] {

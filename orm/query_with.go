@@ -1,5 +1,56 @@
 package orm
 
+import "strings"
+
+func (m Query[T]) WithParentsOnColumn(childPidColumn interface{}) Query[T] {
+    tempName := m.TableInterface().TableName() + "_cte"
+
+    col, err := m.parseColumn(childPidColumn)
+    if err != nil {
+        return m.setErr(err)
+    }
+    coln := strings.Split(col, ".")
+    newcol := strings.Trim(coln[len(coln)-1], "`")
+
+    cte := NewQueryRaw(m.db, tempName)
+
+    appendQuery := NewQuery(*m.T, m.db)
+    appendQuery = appendQuery.Join(cte.T, func(query Query[T]) Query[T] {
+        return query.Where(appendQuery.tables[0].tableStruct.Field(0).Addr().Interface(), Raw(tempName+"."+newcol))
+    }).Select(appendQuery.AllCols())
+
+    m.self = &cte
+    return m.UnionAll(appendQuery.SubQuery())
+}
+
+func (m Query[T]) WithChildrenOnColumn(selfPidColumn interface{}) Query[T] {
+    tempName := m.TableInterface().TableName() + "_cte"
+
+    pcol, err := m.parseColumn(selfPidColumn)
+    if err != nil {
+        return m.setErr(err)
+    }
+    if strings.Contains(pcol, ".") == false {
+        pcol = m.TableInterface().TableName() + "." + pcol
+    }
+    col, err := m.parseColumn(m.tables[0].tableStruct.Field(0).Addr().Interface())
+    if err != nil {
+        return m.setErr(err)
+    }
+    coln := strings.Split(col, ".")
+    newcol := strings.Trim(coln[len(coln)-1], "`")
+
+    cte := NewQueryRaw(m.db, tempName)
+
+    appendQuery := NewQuery(*m.T, m.db)
+    appendQuery = appendQuery.Join(cte.T, func(query Query[T]) Query[T] {
+        return query.Where(pcol, Raw(tempName+"."+newcol))
+    }).Select(appendQuery.AllCols())
+
+    m.self = &cte
+    return m.UnionAll(appendQuery.SubQuery())
+}
+
 func (m Query[T]) WithCte(subquery SubQuery, cteName string, columns ...string) Query[T] {
     return m.withCte(subquery, cteName, false, columns...)
 }

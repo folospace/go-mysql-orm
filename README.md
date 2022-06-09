@@ -90,7 +90,12 @@ func main() {
         SelectRank(func(sub orm.Query[Order]) orm.Query[Order] {
             return sub.OrderByDesc(&OrderTable.T.OrderAmount)
         }, "order_amount_rank").GetRows()
-    }
+        
+        //select recursive to find children ...
+        FileFolderTable.Where("id", 1).WithChildrenOnColumn("pid").GetRows()
+        //select recursive to find parents ...
+        FileFolderTable.Where("id", 9).WithParentsOnColumn("pid").GetRows()
+}
 ```
 
 ## update | delete | insert
