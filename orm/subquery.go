@@ -1,66 +1,66 @@
 package orm
 
 import (
-    "database/sql"
-    "strings"
+	"database/sql"
+	"strings"
 )
 
 type SubQuery struct {
-    raw       string
-    bindings  []interface{}
-    recursive bool
-    dbName    string
-    tableName string
-    columns   []string
-    db        *sql.DB
-    tx        *sql.Tx
-    err       error
-    unionAll  bool
+	raw       string
+	bindings  []interface{}
+	recursive bool
+	dbName    string
+	tableName string
+	columns   []string
+	db        *sql.DB
+	tx        *sql.Tx
+	err       error
+	unionAll  bool
 }
 
 func NewSubQuery(prepareSql string, bindings ...interface{}) SubQuery {
-    return SubQuery{raw: prepareSql, bindings: bindings}
+	return SubQuery{raw: prepareSql, bindings: bindings}
 }
 
 func (m SubQuery) TableName() string {
-    if m.tableName != "" {
-        return m.tableName
-    }
-    if m.raw != "" {
-        return "sub"
-    }
-    return ""
+	if m.tableName != "" {
+		return m.tableName
+	}
+	if m.raw != "" {
+		return "sub"
+	}
+	return ""
 }
 
 func (m SubQuery) DatabaseName() string {
-    return m.dbName
+	return m.dbName
 }
 
 func (m SubQuery) Error() error {
-    return m.err
+	return m.err
 }
 
 func (m SubQuery) ToSql() string {
-    params := make([]string, len(m.bindings))
-    for k, v := range m.bindings {
-        params[k] = varToString(v)
-    }
+	params := make([]string, len(m.bindings))
+	for k, v := range m.bindings {
+		params[k] = varToString(v)
+	}
 
-    var sqlb strings.Builder
-    var index = 0
+	var sqlb strings.Builder
+	var index = 0
 
-    for _, v := range []byte(m.raw) {
-        if v == '?' {
-            if len(params) > index {
-                sqlb.WriteString(params[index])
-                index++
-            } else {
-                break
-            }
-        } else {
-            sqlb.WriteByte(v)
-        }
-    }
+	for _, v := range []byte(m.raw) {
+		if v == '?' {
+			if len(params) > index {
+				sqlb.WriteString(params[index])
+				index++
+			} else {
+				break
+			}
+		} else {
+			sqlb.WriteByte(v)
+		}
+	}
 
-    return sqlb.String()
+	return sqlb.String()
 }

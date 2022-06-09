@@ -1,6 +1,6 @@
 package orm
 
 type UpdateColumn struct {
-    Column interface{}
-    Val    interface{}
+	Column interface{}
+	Val    interface{}
 }
