@@ -90,10 +90,10 @@ func main() {
     
     //select orders (where user_id=1) with rank by order_amount
     OrderTable.Where(&OrderTable.T.UserId, 1).
-    Select(OrderTable.AllCols()).
-    SelectRank(func (sub orm.Query[Order]) orm.Query[Order] {
-        return sub.OrderByDesc(&OrderTable.T.OrderAmount)
-    }, "order_amount_rank").GetRows()
+        Select(OrderTable.AllCols()).
+        SelectRank(func (sub orm.Query[Order]) orm.Query[Order] {
+            return sub.OrderByDesc(&OrderTable.T.OrderAmount)
+        }, "order_amount_rank").GetRows()
     
     //select recursive to find children ...
     FileFolderTable.Where("id", 1).WithChildrenOnColumn("pid").GetRows()
@@ -120,9 +120,9 @@ func main() {
 ```go
     //query join 
     UserTable.Join(OrderTable.T, func (query orm.Query[User]) orm.Query[User] {
-        return query.Where(&UserTable.T.Id, &OrderTable.T.UserId)
-    }).Where(&OrderTable.T.OrderAmount, 100).
-    Select(UserTable.AllCols()).Gets()
+            return query.Where(&UserTable.T.Id, &OrderTable.T.UserId)
+        }).Where(&OrderTable.T.OrderAmount, 100).
+        Select(UserTable.AllCols()).Gets()
 ```
 
 ## transaction
@@ -166,8 +166,8 @@ func main() {
     //each user has many orders
     var userOrders map[int][]Order
     OrderTable.Where(&OrderTable.UserId, orm.WhereIn, userIds).
-    Select(&OrderTable.UserId, OrderTable.AllCols()).
-    GetTo(&userOrders)
+        Select(&OrderTable.UserId, OrderTable.AllCols()).
+        GetTo(&userOrders)
     
     //set user has orders
     for k := range users {
