@@ -19,9 +19,9 @@ Completed Features:
 
 ```go
 import (
-"database/sql"
-"github.com/folospace/go-mysql-orm/orm"
-_ "github.com/go-sql-driver/mysql"
+    "database/sql"
+    "github.com/folospace/go-mysql-orm/orm"
+    _ "github.com/go-sql-driver/mysql"
 )
 
 //connect mysql db
@@ -104,14 +104,14 @@ func main() {
 ## update | delete | insert
 
 ```go
-//update user set name="hello" where id=1
-UserTable.Where(&UserTable.T.Id, 1).Update(&UserTable.T.Name, "hello")
-
-//query delete
-UserTable.Where(&UserTable.T.Id, 1).Delete()
-
-//query insert
-_ = UserTable.Insert(User{Name: "han"}).LastInsertId //insert one row and get id
+    //update user set name="hello" where id=1
+    UserTable.Where(&UserTable.T.Id, 1).Update(&UserTable.T.Name, "hello")
+    
+    //query delete
+    UserTable.Where(&UserTable.T.Id, 1).Delete()
+    
+    //query insert
+    _ = UserTable.Insert(User{Name: "han"}).LastInsertId //insert one row and get id
 
 ```
 
@@ -139,19 +139,19 @@ _ = UserTable.Insert(User{Name: "han"}).LastInsertId //insert one row and get id
 ## subquery
 
 ```go
-//subquery
-subquery := UserTable.Where(&UserTable.T.Id, 1).SubQuery()
-
-//where in suquery
-UserTable.Where(&UserTable.T.Id, orm.WhereIn, subquery).Gets()
-
-//insert subquery
-UserTable.InsertSubquery(subquery, nil)
-
-//join subquery
-UserTable.Join(subquery, func (query orm.Query[User]) orm.Query[User] {
-    return query.Where(&UserTable.T.Id, orm.Raw("sub.id"))
-}).Gets()
+    //subquery
+    subquery := UserTable.Where(&UserTable.T.Id, 1).SubQuery()
+    
+    //where in suquery
+    UserTable.Where(&UserTable.T.Id, orm.WhereIn, subquery).Gets()
+    
+    //insert subquery
+    UserTable.InsertSubquery(subquery, nil)
+    
+    //join subquery
+    UserTable.Join(subquery, func (query orm.Query[User]) orm.Query[User] {
+        return query.Where(&UserTable.T.Id, orm.Raw("sub.id"))
+    }).Gets()
 ```
 
 ## Relation (has many | belongs to)
