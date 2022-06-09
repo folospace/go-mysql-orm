@@ -46,6 +46,12 @@ func (m Query[T]) SelectOver(windowFunc string, f func(query Query[T]) Query[T],
 	return m
 }
 
+func (m Query[T]) SelectOverRaw(windowFunc string, windowName string, alias string) Query[T] {
+	newSelect := windowFunc + " over " + windowName + " as " + alias
+	m.columns = append(m.columns, newSelect)
+	return m
+}
+
 func (m Query[T]) Select(columns ...interface{}) Query[T] {
 	m.columns = append(m.columns, columns...)
 	return m
