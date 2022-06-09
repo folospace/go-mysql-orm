@@ -164,7 +164,7 @@ func getTableDbColumns[T Table](query Query[T]) ([]dBColumn, error) {
 		if strings.HasPrefix(v, "PRIMARY KEY ") {
 			v = strings.TrimPrefix(v, "PRIMARY KEY ")
 			keyNameAndCols := strings.Trim(v, "()")
-			keyNameAndCols = strings.Trim(v, "`")
+			keyNameAndCols = strings.Trim(keyNameAndCols, "`")
 			ret[existColumn[keyNameAndCols]].Primary = true
 		} else if strings.HasPrefix(v, "UNIQUE KEY ") {
 			v = strings.TrimPrefix(v, "UNIQUE KEY ")

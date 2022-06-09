@@ -365,7 +365,7 @@ func getTypeAndDefault(val reflect.Value) (string, string) {
 	return types, defaults
 }
 
-func stringSplitEscapeParentheses(s string, seperator string) []string {
+func stringSplitEscapeParentheses(s string, separator string) []string {
 	var splits []string
 	var start = "("
 	var end = ")"
@@ -374,7 +374,7 @@ func stringSplitEscapeParentheses(s string, seperator string) []string {
 	var before string
 	for i, v := range s {
 		temp := string(v)
-		if temp == seperator && (openP == 0 || strings.Contains(s[i:], end) == false) {
+		if temp == separator && (openP == 0 || strings.Contains(s[i:], end) == false) {
 			if before != "" {
 				splits = append(splits, before)
 			}

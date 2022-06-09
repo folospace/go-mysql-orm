@@ -154,9 +154,9 @@ func (m Query[T]) scanValues(baseAddrs []interface{}, rowColumns []string, rows 
 }
 
 func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
-	rowColumns, err := rows.Columns()
-	if err != nil {
-		return err
+	rowColumns, gerr := rows.Columns()
+	if gerr != nil {
+		return gerr
 	}
 	base := reflect.ValueOf(dest)
 	if base.Kind() != reflect.Ptr {
@@ -191,7 +191,7 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 					baseAddrs[k] = &temp
 				}
 			}
-			err = m.scanValues(baseAddrs, rowColumns, rows, func() {
+			gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
 				newVal.SetMapIndex(reflect.ValueOf(baseAddrs[0]).Elem(), reflect.ValueOf(structAddr).Elem())
 			}, false)
 			base.Elem().Set(newVal)
@@ -213,7 +213,7 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 					baseAddrs[k] = &temp
 				}
 			}
-			err = m.scanValues(baseAddrs, rowColumns, rows, func() {
+			gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
 				index := reflect.ValueOf(baseAddrs[0]).Elem()
 				tempSlice := newVal.MapIndex(index)
 				if tempSlice.IsValid() == false {
@@ -232,14 +232,14 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 					baseAddrs[k] = &temp
 				}
 
-				err = m.scanValues(baseAddrs, rowColumns, rows, func() {
+				gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
 					for k, v := range rowColumns {
 						newVal.SetMapIndex(reflect.ValueOf(v), reflect.ValueOf(baseAddrs[k]).Elem())
 					}
 				}, true)
 
 				base.Elem().Set(newVal)
-				return err
+				return gerr
 			}
 			fallthrough
 		default:
@@ -260,7 +260,7 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 					baseAddrs[k] = &temp
 				}
 			}
-			err = m.scanValues(baseAddrs, rowColumns, rows, func() {
+			gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
 				newVal.SetMapIndex(reflect.ValueOf(keyAddr).Elem(), reflect.ValueOf(tempAddr).Elem())
 			}, false)
 
@@ -281,7 +281,7 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 				baseAddrs[k] = &temp
 			}
 		}
-		err = m.scanValues(baseAddrs, rowColumns, rows, nil, true)
+		gerr = m.scanValues(baseAddrs, rowColumns, rows, nil, true)
 	case reflect.Slice:
 		ele := reflect.TypeOf(dest).Elem().Elem()
 		if ele.Kind() == reflect.Ptr {
@@ -305,7 +305,7 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 				}
 			}
 
-			err = m.scanValues(baseAddrs, rowColumns, rows, func() {
+			gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
 				val = reflect.Append(val, reflect.ValueOf(structAddr).Elem())
 			}, false)
 
@@ -317,7 +317,7 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 				var temp interface{}
 				baseAddrs[k] = &temp
 			}
-			err = m.scanValues(baseAddrs, rowColumns, rows, func() {
+			gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
 				newVal := reflect.MakeMap(ele)
 				for k, v := range rowColumns {
 					newVal.SetMapIndex(reflect.ValueOf(v), reflect.ValueOf(baseAddrs[k]).Elem())
@@ -340,7 +340,7 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 				}
 			}
 
-			err = m.scanValues(baseAddrs, rowColumns, rows, func() {
+			gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
 				val = reflect.Append(val, reflect.ValueOf(tempAddr).Elem())
 			}, false)
 
@@ -356,7 +356,7 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 				baseAddrs[k] = &temp
 			}
 		}
-		err = m.scanValues(baseAddrs, rowColumns, rows, nil, true)
+		gerr = m.scanValues(baseAddrs, rowColumns, rows, nil, true)
 	}
-	return err
+	return gerr
 }
