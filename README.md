@@ -31,8 +31,8 @@ var db, _ = sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/mydb?parseTime=
 var UserTable = orm.NewQuery(User{}, db)
 
 type User struct {
-Id   int    `json:"id"`
-Name string `json:"name"`
+    Id   int    `json:"id"`
+    Name string `json:"name"`
 }
 
 func (User) TableName() string {
@@ -47,66 +47,63 @@ return "mydb"
 
 ```go
 func main() {
-orm.CreateTableFromStruct(UserTable) //create db table, add new columns if table already exist.
-orm.CreateStructFromTable(UserTable) //create struct fields in code
+    orm.CreateTableFromStruct(UserTable) //create db table, add new columns if table already exist.
+    orm.CreateStructFromTable(UserTable) //create struct fields in code
 }        
 ```
 
 ## select query usage
 
 ```go
-    //query select {
-//get first user as struct
-user, query := UserTable.Get()
-
-//get user where primary id = 1
-user, query = UserTable.Get(1)
-
-//get users as struct slice
-users, query := UserTable.Limit(5).Gets()
-
-//get users by primary ids
-users, query = UserTable.Gets(1, 2, 3)
-
-//get user first row as map[string]interface
-row, query := UserTable.GetRow()
-
-//get user rows as []map[string]interface
-rows, query := UserTable.Limit(5).GetRows()
-
-//get users count(*)
-count, query := UserTable.GetCount()
-
-//get users map key by id
-var usersKeyById map[int]User
-UserTable.GetTo(&usersKeyById)
-
-//get user names map key by id
-var userNameKeyById map[int]string
-UserTable.Select(&UserTable.T.Id, &UserTable.T.Name).GetTo(&userNameKeyById)
-
-//get users map key by name
-var usersMapkeyByName map[string][]User
-UserTable.Select(&UserTable.T.Name, UserTable.AllCols()).GetTo(&usersMapkeyByName)
-
-//select orders (where user_id=1) with rank by order_amount
-OrderTable.Where(&OrderTable.T.UserId, 1).
-Select(OrderTable.AllCols()).
-SelectRank(func (sub orm.Query[Order]) orm.Query[Order] {
-return sub.OrderByDesc(&OrderTable.T.OrderAmount)
-}, "order_amount_rank").GetRows()
-
-//select recursive to find children ...
-FileFolderTable.Where("id", 1).WithChildrenOnColumn("pid").GetRows()
-//select recursive to find parents ...
-FileFolderTable.Where("id", 9).WithParentsOnColumn("pid").GetRows()
-}
+    //get first user as struct
+    user, query := UserTable.Get()
+    
+    //get user where primary id = 1
+    user, query = UserTable.Get(1)
+    
+    //get users as struct slice
+    users, query := UserTable.Limit(5).Gets()
+    
+    //get users by primary ids
+    users, query = UserTable.Gets(1, 2, 3)
+    
+    //get user first row as map[string]interface
+    row, query := UserTable.GetRow()
+    
+    //get user rows as []map[string]interface
+    rows, query := UserTable.Limit(5).GetRows()
+    
+    //get users count(*)
+    count, query := UserTable.GetCount()
+    
+    //get users map key by id
+    var usersKeyById map[int]User
+    UserTable.GetTo(&usersKeyById)
+    
+    //get user names map key by id
+    var userNameKeyById map[int]string
+    UserTable.Select(&UserTable.T.Id, &UserTable.T.Name).GetTo(&userNameKeyById)
+    
+    //get users map key by name
+    var usersMapkeyByName map[string][]User
+    UserTable.Select(&UserTable.T.Name, UserTable.AllCols()).GetTo(&usersMapkeyByName)
+    
+    //select orders (where user_id=1) with rank by order_amount
+    OrderTable.Where(&OrderTable.T.UserId, 1).
+    Select(OrderTable.AllCols()).
+    SelectRank(func (sub orm.Query[Order]) orm.Query[Order] {
+        return sub.OrderByDesc(&OrderTable.T.OrderAmount)
+    }, "order_amount_rank").GetRows()
+    
+    //select recursive to find children ...
+    FileFolderTable.Where("id", 1).WithChildrenOnColumn("pid").GetRows()
+    //select recursive to find parents ...
+    FileFolderTable.Where("id", 9).WithParentsOnColumn("pid").GetRows()
 ```
 
 ## update | delete | insert
 
 ```go
-    //query update and delete and insert {
 //update user set name="hello" where id=1
 UserTable.Where(&UserTable.T.Id, 1).Update(&UserTable.T.Name, "hello")
 
@@ -115,37 +112,33 @@ UserTable.Where(&UserTable.T.Id, 1).Delete()
 
 //query insert
 _ = UserTable.Insert(User{Name: "han"}).LastInsertId //insert one row and get id
-}
+
 ```
 
 ### join and where
 
 ```go
-    //query join {
-UserTable.Join(OrderTable.T, func (query orm.Query[User]) orm.Query[User] {
-return query.Where(&UserTable.T.Id, &OrderTable.T.UserId)
-}).Where(&OrderTable.T.OrderAmount, 100).
-Select(UserTable.AllCols()).Gets()
-}
+    //query join 
+    UserTable.Join(OrderTable.T, func (query orm.Query[User]) orm.Query[User] {
+        return query.Where(&UserTable.T.Id, &OrderTable.T.UserId)
+    }).Where(&OrderTable.T.OrderAmount, 100).
+    Select(UserTable.AllCols()).Gets()
 ```
 
 ## transaction
 
 ```go
-    {
-//transaction
-_ = UserTable.Transaction(func (tx *sql.Tx) error {
-newId := UserTable.UseTx(tx).Insert(User{Name: "john"}).LastInsertId //insert
-fmt.Println(newId)
-return errors.New("I want rollback") //rollback
-})
-}
+    //transaction
+    _ = UserTable.Transaction(func (tx *sql.Tx) error {
+        newId := UserTable.UseTx(tx).Insert(User{Name: "john"}).LastInsertId //insert
+        fmt.Println(newId)
+        return errors.New("I want rollback") //rollback
+    })
 ```
 
 ## subquery
 
 ```go
-    {
 //subquery
 subquery := UserTable.Where(&UserTable.T.Id, 1).SubQuery()
 
@@ -157,30 +150,29 @@ UserTable.InsertSubquery(subquery, nil)
 
 //join subquery
 UserTable.Join(subquery, func (query orm.Query[User]) orm.Query[User] {
-return query.Where(&UserTable.T.Id, orm.Raw("sub.id"))
+    return query.Where(&UserTable.T.Id, orm.Raw("sub.id"))
 }).Gets()
-}
 ```
 
 ## Relation (has many | belongs to)
 
 ```go
     users, _ := UserTable.Limit(5).Gets()
-var userIds []int
-for _, v := range users {
-userIds = append(userIds, v.Id)
-}
-
-//each user has many orders
-var userOrders map[int][]Order
-OrderTable.Where(&OrderTable.UserId, orm.WhereIn, userIds).
-Select(&OrderTable.UserId, OrderTable.AllCols()).
-GetTo(&userOrders)
-
-//set user has orders
-for k := range users {
-users[k].Orders = userOrders[users[k].Id]
-}
+    var userIds []int
+    for _, v := range users {
+        userIds = append(userIds, v.Id)
+    }
+    
+    //each user has many orders
+    var userOrders map[int][]Order
+    OrderTable.Where(&OrderTable.UserId, orm.WhereIn, userIds).
+    Select(&OrderTable.UserId, OrderTable.AllCols()).
+    GetTo(&userOrders)
+    
+    //set user has orders
+    for k := range users {
+        users[k].Orders = userOrders[users[k].Id]
+    }
 ```
 
 ## about migration
@@ -194,13 +186,13 @@ users[k].Orders = userOrders[users[k].Id]
 
 ```go
     type User struct {
-Id int `json:"id"`
-Email string `json:"email" orm:"email,varchar(64),null,unique,index_email_and_score" comment:"user email"`
-Score int `json:"score" orm:"score,index,index_email_and_score" comment:"user score"`
-Name string `json:"name" default:"john" comment:"user name"`
-CreatedAt time.Time `json:"created_at"`
-UpdatedAt time.Time `json:"updated_at"`
-}
+        Id int `json:"id"`
+        Email string `json:"email" orm:"email,varchar(64),null,unique,index_email_and_score" comment:"user email"`
+        Score int `json:"score" orm:"score,index,index_email_and_score" comment:"user score"`
+        Name string `json:"name" default:"john" comment:"user name"`
+        CreatedAt time.Time `json:"created_at"`
+        UpdatedAt time.Time `json:"updated_at"`
+    }
 //create table IF NOT EXISTS `user` (
 //`id` int not null auto_increment,
 //`email` varchar(64) null comment 'user email',
