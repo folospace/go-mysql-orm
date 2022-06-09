@@ -29,12 +29,23 @@ type Query[T Table] struct {
     groupBy      []interface{}
     having       []where
     curFileName  string
+    unions       []SubQuery
+    withCtes     []SubQuery
+    windows      []SubQuery
 }
 
 func NewQuery[T Table](t T, db *sql.DB) Query[T] {
     q := Query[T]{T: &t, db: db}
     q.curFileName = q.currentFilename()
     return q.FromTable(q.TableInterface())
+}
+
+func NewQueryRaw(db *sql.DB, tableName ...string) Query[SubQuery] {
+    sq := SubQuery{}
+    if len(tableName) > 0 {
+        sq.tableName = tableName[0]
+    }
+    return NewQuery(sq, db)
 }
 
 func (m Query[T]) TableInterface() Table {
