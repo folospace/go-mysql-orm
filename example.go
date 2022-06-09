@@ -95,9 +95,7 @@ func main() {
 		//select orders (where user_id=1) with rank by order_amount
 		OrderTable.Where(&OrderTable.T.UserId, 1).
 			Select(OrderTable.AllCols()).
-			SelectRank(func(sub orm.Query[Order]) orm.Query[Order] {
-				return sub.OrderByDesc(&OrderTable.T.OrderAmount)
-			}, "order_amount_rank").GetRows()
+			SelectRank(&OrderTable.T.OrderAmount, "order_amount_rank").GetRows()
 	}
 
 	//query update and delete and insert

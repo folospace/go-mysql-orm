@@ -90,10 +90,8 @@ func main() {
     
     //select orders (where user_id=1) with rank by order_amount
     OrderTable.Where(&OrderTable.T.UserId, 1).
-        Select(OrderTable.AllCols()).
-        SelectRank(func (sub orm.Query[Order]) orm.Query[Order] {
-            return sub.OrderByDesc(&OrderTable.T.OrderAmount)
-        }, "order_amount_rank").GetRows()
+    Select(OrderTable.AllCols()).
+    SelectRank(&OrderTable.T.OrderAmount, "order_amount_rank").GetRows()
     
     //select recursive to find children ...
     FileFolderTable.Where("id", 1).WithChildrenOnColumn("pid").GetRows()

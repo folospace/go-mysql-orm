@@ -10,8 +10,19 @@ const (
 	SelectForUpdateTypeSkipLocked SelectForUpdateType = "for update skip locked"
 )
 
-func (m Query[T]) SelectRank(f func(query Query[T]) Query[T], alias string) Query[T] {
-	windowFunc := "rank()"
+func (m Query[T]) SelectRank(column interface{}, alias string) Query[T] {
+	return m.SelectOver("rank()", func(query Query[T]) Query[T] {
+		return query.OrderBy(column)
+	}, alias)
+}
+
+func (m Query[T]) SelectRankDesc(column interface{}, alias string) Query[T] {
+	return m.SelectOver("rank()", func(query Query[T]) Query[T] {
+		return query.OrderByDesc(column)
+	}, alias)
+}
+
+func (m Query[T]) SelectOver(windowFunc string, f func(query Query[T]) Query[T], alias string) Query[T] {
 	partitionStart := len(m.partitionbys)
 	orderStart := len(m.orderbys)
 	nq := f(m)
