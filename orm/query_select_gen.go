@@ -4,7 +4,7 @@ import (
     "strings"
 )
 
-func (m Query[T]) SubQuery() *SubQuery {
+func (m Query[T]) SubQuery() SubQuery {
     tempTable := m.generateSelectQuery(m.columns...)
 
     tempTable.db = m.db
@@ -12,7 +12,7 @@ func (m Query[T]) SubQuery() *SubQuery {
     tempTable.dbName = m.tables[0].table.DatabaseName()
     tempTable.err = m.result.Err
 
-    return &tempTable
+    return tempTable
 }
 
 func (m Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
@@ -21,7 +21,28 @@ func (m Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
         ret.raw = m.prepareSql
         ret.bindings = m.bindings
     } else {
+        var rawSql string
         bindings := make([]interface{}, 0)
+
+        if len(m.withCtes) > 0 {
+            var raws []string
+            for _, v := range m.withCtes {
+                var raw string
+                if v.recursive {
+                    raw += "recursive "
+                }
+                raw += v.tableName
+                if len(v.columns) > 0 {
+                    raw += "(" + strings.Join(v.columns, ",") + ")"
+                }
+                raw += " as ("
+                raw += v.raw
+                raw += ")"
+                raws = append(raws, raw)
+                bindings = append(bindings, v.bindings...)
+            }
+            rawSql += "with " + strings.Join(raws, ",\n") + "\n"
+        }
 
         selectStr, err := m.generateSelectColumns(columns...)
         if err != nil {
@@ -46,7 +67,7 @@ func (m Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
 
         orderLimitOffsetStr := m.getOrderAndLimitSqlStr()
 
-        rawSql := "select " + selectStr
+        rawSql += "select " + selectStr
 
         if tableStr != "" {
             rawSql += " from " + tableStr
@@ -68,6 +89,27 @@ func (m Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
 
         if m.forUpdate != "" {
             rawSql += " " + string(m.forUpdate)
+        }
+
+        if len(m.unions) > 0 {
+            for _, v := range m.unions {
+                prefix := "\nunion"
+                if v.unionAll {
+                    prefix += " all"
+                }
+                prefix += " \n" + v.raw
+                rawSql += prefix
+                bindings = append(bindings, v.bindings...)
+            }
+        }
+
+        if len(m.windows) > 0 {
+            var raws []string
+            for _, v := range m.windows {
+                var raw = v.tableName + " as (" + v.raw + ")"
+                raws = append(raws, raw)
+            }
+            rawSql += "\nwindow " + strings.Join(raws, ",\n")
         }
 
         ret.raw = rawSql
