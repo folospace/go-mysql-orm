@@ -12,6 +12,8 @@ Completed Features:
 - select (update | insert) with subquery
 - join (left join | right join) table
 - support golang generics to make query more easily
+- select with window function (rank())
+- select with common table expression (cte)
 
 ## Get Started
 
