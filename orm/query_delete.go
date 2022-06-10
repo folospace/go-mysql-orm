@@ -5,11 +5,19 @@ import (
 	"errors"
 )
 
-func (m Query[T]) Delete() QueryResult {
+func (m Query[T]) Delete(primaryValues ...interface{}) QueryResult {
 	if len(m.tables) == 0 {
 		m.setErr(errors.New("delete table not selected"))
 		return m.result
 	}
+	if len(primaryValues) > 0 {
+		return m.Where(m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, primaryValues).delete()
+	} else {
+		return m.delete()
+	}
+}
+
+func (m Query[T]) delete() QueryResult {
 	bindings := make([]interface{}, 0)
 
 	tableStr := m.generateTableAndJoinStr(m.tables, &bindings)

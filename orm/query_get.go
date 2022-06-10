@@ -8,10 +8,10 @@ import (
 )
 
 //get first T
-func (m Query[T]) Get(PrimaryValue ...interface{}) (T, QueryResult) {
+func (m Query[T]) Get(primaryValue ...interface{}) (T, QueryResult) {
 	var ret T
-	if len(PrimaryValue) > 0 {
-		res := m.Where(m.tables[0].tableStruct.Field(0).Addr().Interface(), PrimaryValue[0]).Limit(1).GetTo(&ret)
+	if len(primaryValue) > 0 {
+		res := m.Where(m.tables[0].tableStruct.Field(0).Addr().Interface(), primaryValue[0]).Limit(1).GetTo(&ret)
 		return ret, res
 	} else {
 		res := m.Limit(1).GetTo(&ret)
@@ -20,10 +20,10 @@ func (m Query[T]) Get(PrimaryValue ...interface{}) (T, QueryResult) {
 }
 
 //get slice T
-func (m Query[T]) Gets(PrimaryValues ...interface{}) ([]T, QueryResult) {
+func (m Query[T]) Gets(primaryValues ...interface{}) ([]T, QueryResult) {
 	var ret []T
-	if len(PrimaryValues) > 0 {
-		res := m.Where(m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, PrimaryValues).GetTo(&ret)
+	if len(primaryValues) > 0 {
+		res := m.Where(m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, primaryValues).GetTo(&ret)
 		return ret, res
 	} else {
 		res := m.GetTo(&ret)
