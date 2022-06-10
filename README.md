@@ -3,7 +3,7 @@
 A golang package dedicated to simplify developing with mysql database.
 
 Completed Features:
-
+- support golang 1.18 generics
 - try to avoid using raw strings.
 - create mysql table from golang struct
 - create golang struct from mysql table
@@ -11,7 +11,6 @@ Completed Features:
 - transaction
 - select (update | insert) with subquery
 - join (left join | right join) table
-- support golang generics to make query more easily
 - select with window function (rank())
 - select with common table expression (cte)
 
