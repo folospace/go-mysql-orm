@@ -35,10 +35,10 @@ type User struct {
 }
 
 func (User) TableName() string {
-return "user"
+    return "user"
 }
 func (User) DatabaseName() string {
-return "mydb"
+    return "mydb"
 }
 ```
 
@@ -118,8 +118,7 @@ func main() {
     //query join 
     UserTable.Join(OrderTable.T, func (query orm.Query[User]) orm.Query[User] {
             return query.Where(&UserTable.T.Id, &OrderTable.T.UserId)
-        }).Where(&OrderTable.T.OrderAmount, 100).
-        Select(UserTable.AllCols()).Gets()
+    }).Where(&OrderTable.T.OrderAmount, 100).Select(UserTable.AllCols()).Gets()
 ```
 
 ## transaction
