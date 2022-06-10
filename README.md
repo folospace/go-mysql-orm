@@ -105,7 +105,7 @@ func main() {
     UserTable.Where(&UserTable.T.Id, 1).Update(&UserTable.T.Name, "hello")
     
     //query delete
-    UserTable.Where(&UserTable.T.Id, 1).Delete()
+    UserTable.Delete(1, 2, 3)
     
     //query insert
     _ = UserTable.Insert(User{Name: "han"}).LastInsertId //insert one row and get id
