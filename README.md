@@ -205,6 +205,8 @@ func main() {
 //) 
 ```
 
+## Test in [go playground](https://go.dev/play/p/IjbPU1hCHMe)
+
 ## contribute
 
 Contribute to this project by submitting a(an) PR | issue. Any contribution will be Appreciated.
