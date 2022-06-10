@@ -307,28 +307,21 @@ func (m Query[T]) OrderByDesc(column interface{}) Query[T] {
 }
 
 func (m Query[T]) getOrderAndLimitSqlStr() string {
-	var orderStr string
+	var ret []string
 	if len(m.orderbys) > 0 {
-		orderStr = "order by " + strings.Join(m.orderbys, ",")
+		orderStr := "order by " + strings.Join(m.orderbys, ",")
+		ret = append(ret, orderStr)
 	}
-	var limitStr string
 	if m.limit > 0 {
-		limitStr = "limit " + strconv.Itoa(m.limit)
+		limitStr := "limit " + strconv.Itoa(m.limit)
+		ret = append(ret, limitStr)
 	}
-	var offsetStr string
 	if m.offset > 0 {
-		offsetStr = "offset " + strconv.Itoa(m.offset)
+		offsetStr := "offset " + strconv.Itoa(m.offset)
+		ret = append(ret, offsetStr)
 	}
 
-	var ret = orderStr
-	if limitStr != "" {
-		ret += " " + limitStr
-		if offsetStr != "" {
-			ret += " " + offsetStr
-		}
-	}
-
-	return ret
+	return strings.Join(ret, " ")
 }
 
 func (m Query[T]) currentFilename() string {
