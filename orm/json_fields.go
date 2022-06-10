@@ -78,6 +78,8 @@ func getStructFieldAddrMap(objAddr interface{}) (map[string]interface{}, error) 
 		return nil, errors.New("obj must be struct")
 	}
 
+	tableStructType := reflect.TypeOf(objAddr).Elem()
+
 	ret := make(map[string]interface{})
 
 	fields, err := getStructFieldNameSlice(tableStruct.Interface())
@@ -86,13 +88,25 @@ func getStructFieldAddrMap(objAddr interface{}) (map[string]interface{}, error) 
 	}
 
 	for i := 0; i < tableStruct.NumField(); i++ {
-		valueField := tableStruct.Field(i)
+		if tableStruct.Field(i).Kind() == reflect.Struct && tableStructType.Field(i).Anonymous {
+			innerMap, err := getStructFieldAddrMap(tableStruct.Field(i).Addr().Interface())
+			if err != nil {
+				return ret, err
+			}
+			for k, v := range innerMap {
+				ret[k] = v
+			}
+		} else {
+			valueField := tableStruct.Field(i)
 
-		name := fields[i]
-		if name != "" {
-			ret[name] = valueField.Addr().Interface()
+			name := fields[i]
+			if name != "" {
+				ret[name] = valueField.Addr().Interface()
+			}
+
 		}
 	}
+
 	return ret, nil
 }
 
@@ -137,9 +151,16 @@ func getStructFieldNameSlice(obj interface{}) ([]string, error) {
 	if tableStruct.Kind() != reflect.Struct {
 		return nil, errors.New("obj must be struct")
 	}
-	ret := make([]string, tableStruct.NumField())
+	var ret = make([]string, tableStruct.NumField())
 
 	for i := 0; i < tableStruct.NumField(); i++ {
+		//if tableStruct.Field(i).Kind() == reflect.Struct && tableStructType.Field(i).Anonymous {
+		//	innerFields, err := getStructFieldNameSlice(tableStruct.Field(i).Interface())
+		//	if err != nil {
+		//		return ret, err
+		//	}
+		//	ret = append(ret, innerFields...)
+		//}
 		ormTag := strings.Split(tableStructType.Field(i).Tag.Get("orm"), ",")[0]
 		if ormTag == "-" {
 			ormTag = ""
