@@ -1,6 +1,6 @@
 # golang mysql orm [![Go Report Card](https://goreportcard.com/badge/github.com/beatlabs/harvester)](https://goreportcard.com/report/github.com/folospace/go-mysql-orm) [![GoDoc](https://godoc.org/github.com/folospace/go-mysql-orm?status.svg)](https://godoc.org/github.com/folospace/go-mysql-orm) ![GitHub release](https://img.shields.io/github/v/release/folospace/go-mysql-orm.svg)
 
-A golang package dedicated to simplify developing with mysql database.
+A golang orm package dedicated to simplify developing with mysql database.
 
 Completed Features:
 - support golang 1.18 generics
