@@ -212,7 +212,7 @@ func getTableDbColumns[T Table](query Query[T]) ([]dBColumn, error) {
 					ret[existColumn[colName]].Indexs = append(ret[existColumn[colName]].Indexs, keyName)
 				}
 			}
-		} else {
+		} else if strings.HasPrefix(v, "`") {
 			var col dBColumn
 			col.Null = true
 			temp := findCommentRegex.FindStringSubmatch(v)
