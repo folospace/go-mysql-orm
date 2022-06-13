@@ -4,13 +4,13 @@ import (
 	"database/sql"
 )
 
-func (m Query[T]) Delete(primaryValues ...interface{}) QueryResult {
+func (m Query[T]) Delete(primaryIds ...interface{}) QueryResult {
 	if len(m.tables) == 0 {
 		m.setErr(ErrTableNotSelected)
 		return m.result
 	}
-	if len(primaryValues) > 0 {
-		return m.Where(m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, primaryValues).delete()
+	if len(primaryIds) > 0 {
+		return m.Where(m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, primaryIds).delete()
 	} else {
 		return m.delete()
 	}

@@ -19,10 +19,10 @@ func (m Query[T]) Get(primaryValue ...interface{}) (T, QueryResult) {
 }
 
 //get slice T
-func (m Query[T]) Gets(primaryValues ...interface{}) ([]T, QueryResult) {
+func (m Query[T]) Gets(primaryIds ...interface{}) ([]T, QueryResult) {
 	var ret []T
-	if len(primaryValues) > 0 {
-		res := m.Where(m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, primaryValues).GetTo(&ret)
+	if len(primaryIds) > 0 {
+		res := m.Where(m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, primaryIds).GetTo(&ret)
 		return ret, res
 	} else {
 		res := m.GetTo(&ret)
