@@ -25,8 +25,8 @@ func setFieldsCache(key string, val []string) {
 	structFieldsCache.Store(key, val)
 }
 
-func castFieldsToStrSlice(tableObjAddr interface{}, tableColumnAddrs ...interface{}) ([]string, error) {
-	if len(tableColumnAddrs) == 0 {
+func castFieldsToStrSlice(tableObjAddr interface{}, tableColumnPtrs ...interface{}) ([]string, error) {
+	if len(tableColumnPtrs) == 0 {
 		return nil, nil
 	}
 
@@ -44,7 +44,7 @@ func castFieldsToStrSlice(tableObjAddr interface{}, tableColumnAddrs ...interfac
 	tableStructType := reflect.TypeOf(tableObjAddr).Elem()
 
 	var columns []string
-	for k, v := range tableColumnAddrs {
+	for k, v := range tableColumnPtrs {
 		columnVar := reflect.ValueOf(v)
 		if columnVar.Kind() != reflect.Ptr {
 			return nil, errors.New("params must be address of variable")

@@ -113,33 +113,33 @@ func (m Query[T]) GetTo(destPtr interface{}) QueryResult {
 	return m.result
 }
 
-func (m Query[T]) scanValues(baseAddrs []interface{}, rowColumns []string, rows *sql.Rows, setVal func(), tryOnce bool) error {
+func (m Query[T]) scanValues(basePtrs []interface{}, rowColumns []string, rows *sql.Rows, setVal func(), tryOnce bool) error {
 	var err error
-	var tempAddrs = make([]interface{}, len(rowColumns))
+	var tempPtrs = make([]interface{}, len(rowColumns))
 	for k := range rowColumns {
 		var temp interface{}
-		tempAddrs[k] = &temp
+		tempPtrs[k] = &temp
 	}
 
-	finalAddrs := make([]interface{}, len(rowColumns))
+	finalPtrs := make([]interface{}, len(rowColumns))
 
 	for rows.Next() {
-		err = rows.Scan(tempAddrs...)
+		err = rows.Scan(tempPtrs...)
 		if err != nil {
 			return err
 		}
 
-		for k, v := range tempAddrs {
+		for k, v := range tempPtrs {
 			if reflect.ValueOf(v).Elem().IsNil() {
-				felement := reflect.ValueOf(baseAddrs[k]).Elem()
+				felement := reflect.ValueOf(basePtrs[k]).Elem()
 				felement.Set(reflect.Zero(felement.Type()))
-				finalAddrs[k] = v
+				finalPtrs[k] = v
 			} else {
-				finalAddrs[k] = baseAddrs[k]
+				finalPtrs[k] = basePtrs[k]
 			}
 		}
 
-		err = rows.Scan(finalAddrs...)
+		err = rows.Scan(finalPtrs...)
 		if setVal != nil {
 			setVal()
 		}
@@ -182,17 +182,17 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 			if err != nil {
 				return err
 			}
-			var baseAddrs = make([]interface{}, len(rowColumns))
+			var basePtrs = make([]interface{}, len(rowColumns))
 
 			for k, v := range rowColumns {
-				baseAddrs[k] = structAddrMap[v]
-				if baseAddrs[k] == nil {
+				basePtrs[k] = structAddrMap[v]
+				if basePtrs[k] == nil {
 					var temp interface{}
-					baseAddrs[k] = &temp
+					basePtrs[k] = &temp
 				}
 			}
-			gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
-				newVal.SetMapIndex(reflect.ValueOf(baseAddrs[0]).Elem(), reflect.ValueOf(structAddr).Elem())
+			gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
+				newVal.SetMapIndex(reflect.ValueOf(basePtrs[0]).Elem(), reflect.ValueOf(structAddr).Elem())
 			}, false)
 			base.Elem().Set(newVal)
 		case reflect.Slice:
@@ -204,17 +204,17 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 			if err != nil {
 				return err
 			}
-			var baseAddrs = make([]interface{}, len(rowColumns))
+			var basePtrs = make([]interface{}, len(rowColumns))
 
 			for k, v := range rowColumns {
-				baseAddrs[k] = structAddrMap[v]
-				if baseAddrs[k] == nil {
+				basePtrs[k] = structAddrMap[v]
+				if basePtrs[k] == nil {
 					var temp interface{}
-					baseAddrs[k] = &temp
+					basePtrs[k] = &temp
 				}
 			}
-			gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
-				index := reflect.ValueOf(baseAddrs[0]).Elem()
+			gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
+				index := reflect.ValueOf(basePtrs[0]).Elem()
 				tempSlice := newVal.MapIndex(index)
 				if tempSlice.IsValid() == false {
 					tempSlice = reflect.MakeSlice(ele, 0, 0)
@@ -226,15 +226,15 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 		case reflect.Interface:
 			if reflect.TypeOf(dest).Elem().Key().Kind() == reflect.String {
 
-				var baseAddrs = make([]interface{}, len(rowColumns))
-				for k := range baseAddrs {
+				var basePtrs = make([]interface{}, len(rowColumns))
+				for k := range basePtrs {
 					var temp interface{}
-					baseAddrs[k] = &temp
+					basePtrs[k] = &temp
 				}
 
-				gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
+				gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
 					for k, v := range rowColumns {
-						newVal.SetMapIndex(reflect.ValueOf(v), reflect.ValueOf(baseAddrs[k]).Elem())
+						newVal.SetMapIndex(reflect.ValueOf(v), reflect.ValueOf(basePtrs[k]).Elem())
 					}
 				}, true)
 
@@ -248,19 +248,19 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 			keyAddr := reflect.New(keyType).Interface()
 			tempAddr := reflect.New(ele).Interface()
 
-			var baseAddrs = make([]interface{}, len(rowColumns))
+			var basePtrs = make([]interface{}, len(rowColumns))
 
 			for k := 0; k < len(rowColumns); k++ {
 				if k == 0 {
-					baseAddrs[k] = keyAddr
+					basePtrs[k] = keyAddr
 				} else if k == 1 {
-					baseAddrs[k] = tempAddr
+					basePtrs[k] = tempAddr
 				} else {
 					var temp interface{}
-					baseAddrs[k] = &temp
+					basePtrs[k] = &temp
 				}
 			}
-			gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
+			gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
 				newVal.SetMapIndex(reflect.ValueOf(keyAddr).Elem(), reflect.ValueOf(tempAddr).Elem())
 			}, false)
 
@@ -272,16 +272,16 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 		if err != nil {
 			return err
 		}
-		var baseAddrs = make([]interface{}, len(rowColumns))
+		var basePtrs = make([]interface{}, len(rowColumns))
 
 		for k, v := range rowColumns {
-			baseAddrs[k] = structAddrMap[v]
-			if baseAddrs[k] == nil {
+			basePtrs[k] = structAddrMap[v]
+			if basePtrs[k] == nil {
 				var temp interface{}
-				baseAddrs[k] = &temp
+				basePtrs[k] = &temp
 			}
 		}
-		gerr = m.scanValues(baseAddrs, rowColumns, rows, nil, true)
+		gerr = m.scanValues(basePtrs, rowColumns, rows, nil, true)
 	case reflect.Slice:
 		ele := reflect.TypeOf(dest).Elem().Elem()
 		if ele.Kind() == reflect.Ptr {
@@ -295,32 +295,32 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 			if err != nil {
 				return err
 			}
-			var baseAddrs = make([]interface{}, len(rowColumns))
+			var basePtrs = make([]interface{}, len(rowColumns))
 
 			for k, v := range rowColumns {
-				baseAddrs[k] = structAddrMap[v]
-				if baseAddrs[k] == nil {
+				basePtrs[k] = structAddrMap[v]
+				if basePtrs[k] == nil {
 					var temp interface{}
-					baseAddrs[k] = &temp
+					basePtrs[k] = &temp
 				}
 			}
 
-			gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
+			gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
 				val = reflect.Append(val, reflect.ValueOf(structAddr).Elem())
 			}, false)
 
 			base.Elem().Set(val)
 		case reflect.Map:
-			var baseAddrs = make([]interface{}, len(rowColumns))
+			var basePtrs = make([]interface{}, len(rowColumns))
 
-			for k := range baseAddrs {
+			for k := range basePtrs {
 				var temp interface{}
-				baseAddrs[k] = &temp
+				basePtrs[k] = &temp
 			}
-			gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
+			gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
 				newVal := reflect.MakeMap(ele)
 				for k, v := range rowColumns {
-					newVal.SetMapIndex(reflect.ValueOf(v), reflect.ValueOf(baseAddrs[k]).Elem())
+					newVal.SetMapIndex(reflect.ValueOf(v), reflect.ValueOf(basePtrs[k]).Elem())
 				}
 				val = reflect.Append(val, newVal)
 			}, false)
@@ -329,34 +329,34 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 		default:
 			tempAddr := reflect.New(ele).Interface()
 
-			var baseAddrs = make([]interface{}, len(rowColumns))
+			var basePtrs = make([]interface{}, len(rowColumns))
 
 			for k := 0; k < len(rowColumns); k++ {
 				if k == 0 {
-					baseAddrs[k] = tempAddr
+					basePtrs[k] = tempAddr
 				} else {
 					var temp interface{}
-					baseAddrs[k] = &temp
+					basePtrs[k] = &temp
 				}
 			}
 
-			gerr = m.scanValues(baseAddrs, rowColumns, rows, func() {
+			gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
 				val = reflect.Append(val, reflect.ValueOf(tempAddr).Elem())
 			}, false)
 
 			base.Elem().Set(val)
 		}
 	default:
-		var baseAddrs = make([]interface{}, len(rowColumns))
+		var basePtrs = make([]interface{}, len(rowColumns))
 		for k := 0; k < len(rowColumns); k++ {
 			if k == 0 {
-				baseAddrs[k] = dest
+				basePtrs[k] = dest
 			} else {
 				var temp interface{}
-				baseAddrs[k] = &temp
+				basePtrs[k] = &temp
 			}
 		}
-		gerr = m.scanValues(baseAddrs, rowColumns, rows, nil, true)
+		gerr = m.scanValues(basePtrs, rowColumns, rows, nil, true)
 	}
 	return gerr
 }

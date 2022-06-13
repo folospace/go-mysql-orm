@@ -7,14 +7,14 @@ import (
 	"strings"
 )
 
-//tableFieldAddrs: allow insert table columns
-func (m Query[T]) Insert(data T, tableFieldAddrs ...interface{}) QueryResult {
-	return m.insert(false, []T{data}, tableFieldAddrs, nil)
+//tableFieldPtrs: allow insert table columns
+func (m Query[T]) Insert(data T, tableFieldPtrs ...interface{}) QueryResult {
+	return m.insert(false, []T{data}, tableFieldPtrs, nil)
 }
 
-//tableFieldAddrs: allow insert table columns
-func (m Query[T]) Inserts(data []T, tableFieldAddrs ...interface{}) QueryResult {
-	return m.insert(false, data, tableFieldAddrs, nil)
+//tableFieldPtrs: allow insert table columns
+func (m Query[T]) Inserts(data []T, tableFieldPtrs ...interface{}) QueryResult {
+	return m.insert(false, data, tableFieldPtrs, nil)
 }
 
 //insert ignore ... // on duplicate key update ...
@@ -78,7 +78,7 @@ func (m Query[T]) getInsertBindings(val reflect.Value, isSlice bool, validFieldI
 	return bindings
 }
 
-func (m Query[T]) insert(ignore bool, data interface{}, tableFieldAddrs []interface{}, updates []UpdateColumn) QueryResult {
+func (m Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interface{}, updates []UpdateColumn) QueryResult {
 	val := reflect.ValueOf(data)
 	var err error
 	isSlice := false
@@ -127,7 +127,7 @@ func (m Query[T]) insert(ignore bool, data interface{}, tableFieldAddrs []interf
 	var InsertColumns []string //actually insert columns
 	var allowFields = make(map[interface{}]struct{})
 
-	for _, v := range tableFieldAddrs {
+	for _, v := range tableFieldPtrs {
 		allowFields[v] = struct{}{}
 	}
 	for k, v := range m.tables[0].ormFields {
