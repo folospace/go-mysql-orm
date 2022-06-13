@@ -2,12 +2,11 @@ package orm
 
 import (
 	"database/sql"
-	"errors"
 )
 
 func (m Query[T]) Delete(primaryValues ...interface{}) QueryResult {
 	if len(m.tables) == 0 {
-		m.setErr(errors.New("delete table not selected"))
+		m.setErr(ErrTableNotSelected)
 		return m.result
 	}
 	if len(primaryValues) > 0 {

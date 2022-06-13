@@ -94,7 +94,7 @@ func (m Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interfa
 			return m.result
 		}
 		if val.Index(0).Kind() != reflect.Struct {
-			m.setErr(errors.New("slice element must be struct"))
+			m.setErr(errors.New("slice elem must be struct"))
 		} else {
 			isSlice = true
 			structFields, err = getStructFieldNameSlice(val.Index(0).Interface())

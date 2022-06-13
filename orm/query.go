@@ -125,12 +125,12 @@ func (m Query[T]) parseTable(table Table) (*queryTable, error) {
 		}
 		tableStructAddr := reflect.ValueOf(table)
 		if tableStructAddr.Kind() != reflect.Ptr {
-			return nil, errors.New("params must be address of variable")
+			return nil, ErrParamMustBePtr
 		}
 		//reset query vars
 		tableStruct := tableStructAddr.Elem()
 		if tableStruct.Kind() != reflect.Struct {
-			return nil, errors.New("obj must be struct")
+			return nil, ErrParamElemKindMustBeStruct
 		}
 
 		tableStructType := reflect.TypeOf(table).Elem()
@@ -208,7 +208,7 @@ func (m Query[T]) parseColumn(v interface{}) (string, error) {
 	} else if columnVar.Kind() == reflect.Ptr {
 		table, column := m.getTableColumn(columnVar)
 		if table == nil {
-			return "", errors.New("column is not exist in table")
+			return "", ErrColumnNotExisted
 		}
 		if column == "" {
 			return "", errors.New("column is not exist in table " + table.table.TableName())
@@ -219,7 +219,7 @@ func (m Query[T]) parseColumn(v interface{}) (string, error) {
 		}
 		return prefix + "`" + column + "`", nil
 	} else {
-		return "", errors.New("column should be either string or address of field of table")
+		return "", ErrColumnShouldBeStringOrPtr
 	}
 }
 

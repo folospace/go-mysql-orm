@@ -32,13 +32,13 @@ func castFieldsToStrSlice(tableObjAddr interface{}, tableColumnPtrs ...interface
 
 	tableStructAddr := reflect.ValueOf(tableObjAddr)
 	if tableStructAddr.Kind() != reflect.Ptr {
-		return nil, errors.New("params must be address of variable")
+		return nil, ErrParamMustBePtr
 	}
 
 	tableStruct := tableStructAddr.Elem()
 
 	if tableStruct.Kind() != reflect.Struct {
-		return nil, errors.New("obj must be struct")
+		return nil, ErrParamElemKindMustBeStruct
 	}
 
 	tableStructType := reflect.TypeOf(tableObjAddr).Elem()
@@ -47,7 +47,7 @@ func castFieldsToStrSlice(tableObjAddr interface{}, tableColumnPtrs ...interface
 	for k, v := range tableColumnPtrs {
 		columnVar := reflect.ValueOf(v)
 		if columnVar.Kind() != reflect.Ptr {
-			return nil, errors.New("params must be address of variable")
+			return nil, ErrParamMustBePtr
 		}
 
 		for i := 0; i < tableStruct.NumField(); i++ {
@@ -70,12 +70,12 @@ func castFieldsToStrSlice(tableObjAddr interface{}, tableColumnPtrs ...interface
 func getStructFieldAddrMap(objAddr interface{}) (map[string]interface{}, error) {
 	tableStructAddr := reflect.ValueOf(objAddr)
 	if tableStructAddr.Kind() != reflect.Ptr {
-		return nil, errors.New("params must be address of variable")
+		return nil, ErrParamMustBePtr
 	}
 
 	tableStruct := tableStructAddr.Elem()
 	if tableStruct.Kind() != reflect.Struct {
-		return nil, errors.New("obj must be struct")
+		return nil, ErrParamElemKindMustBeStruct
 	}
 
 	tableStructType := reflect.TypeOf(objAddr).Elem()
@@ -113,12 +113,12 @@ func getStructFieldAddrMap(objAddr interface{}) (map[string]interface{}, error) 
 func getStructAddrFieldMap(objAddr interface{}) (map[interface{}]string, error) {
 	tableStructAddr := reflect.ValueOf(objAddr)
 	if tableStructAddr.Kind() != reflect.Ptr {
-		return nil, errors.New("params must be address of variable")
+		return nil, ErrParamMustBePtr
 	}
 
 	tableStruct := tableStructAddr.Elem()
 	if tableStruct.Kind() != reflect.Struct {
-		return nil, errors.New("obj must be struct")
+		return nil, ErrParamElemKindMustBeStruct
 	}
 
 	tableStructType := reflect.TypeOf(objAddr).Elem()
@@ -149,7 +149,7 @@ func getStructFieldNameSlice(obj interface{}) ([]string, error) {
 
 	tableStruct := reflect.ValueOf(obj)
 	if tableStruct.Kind() != reflect.Struct {
-		return nil, errors.New("obj must be struct")
+		return nil, ErrParamElemKindMustBeStruct
 	}
 	var ret = make([]string, tableStruct.NumField())
 
@@ -189,7 +189,7 @@ func getStructFieldWithDefaultTime(obj interface{}) (map[int]interface{}, error)
 
 	tableStruct := reflect.ValueOf(obj)
 	if tableStruct.Kind() != reflect.Struct {
-		return nil, errors.New("obj must be struct")
+		return nil, ErrParamElemKindMustBeStruct
 	}
 	ret := make(map[int]interface{})
 

@@ -2,7 +2,6 @@ package orm
 
 import (
 	"database/sql"
-	"errors"
 	"reflect"
 	"strings"
 )
@@ -160,18 +159,18 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 	}
 	base := reflect.ValueOf(dest)
 	if base.Kind() != reflect.Ptr {
-		return errors.New("select dest must be ptr")
+		return ErrDestOfGetToMustBePtr
 	}
 	val := base.Elem()
 	if val.Kind() == reflect.Ptr {
-		return errors.New("select dest must be ptr")
+		return ErrDestOfGetToMustBePtr
 	}
 
 	switch val.Kind() {
 	case reflect.Map:
 		ele := reflect.TypeOf(dest).Elem().Elem()
 		if ele.Kind() == reflect.Ptr {
-			return errors.New("select dest slice element must not be ptr")
+			return ErrDestOfGetToSliceElemMustNotBePtr
 		}
 
 		newVal := reflect.MakeMap(reflect.TypeOf(dest).Elem())
@@ -197,7 +196,7 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 			base.Elem().Set(newVal)
 		case reflect.Slice:
 			if ele.Elem().Kind() != reflect.Struct {
-				return errors.New("map slice only struct item allowed")
+				return ErrDestOfGetToSliceElemMustBeStruct
 			}
 			structAddr := reflect.New(ele.Elem()).Interface()
 			structAddrMap, err := getStructFieldAddrMap(structAddr)
@@ -285,7 +284,7 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 	case reflect.Slice:
 		ele := reflect.TypeOf(dest).Elem().Elem()
 		if ele.Kind() == reflect.Ptr {
-			return errors.New("select dest slice element must not be ptr")
+			return ErrDestOfGetToSliceElemMustNotBePtr
 		}
 
 		switch ele.Kind() {

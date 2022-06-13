@@ -136,7 +136,7 @@ func getSqlSegments[T Table](query Query[T]) ([]string, error) {
 
 	createTableSql := res[table.TableName()]
 	if createTableSql == "" {
-		return nil, errors.New("create table sql not exist")
+		return nil, ErrTableNotExisted
 	}
 
 	sqlSegments := strings.Split(createTableSql, "\n")

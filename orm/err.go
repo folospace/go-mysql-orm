@@ -1,10 +1,18 @@
 package orm
 
-func ErrorNotNil(errors ...error) error {
-	for _, v := range errors {
-		if v != nil {
-			return v
-		}
-	}
-	return nil
-}
+import "errors"
+
+var (
+	ErrDbNotSelected                    = errors.New("db not selecteed")
+	ErrTableNotExisted                  = errors.New("table not existed")
+	ErrTableNotSelected                 = errors.New("table not selected")
+	ErrColumnNotSelected                = errors.New("column not selected")
+	ErrColumnNotExisted                 = errors.New("column not existed")
+	ErrRawSqlRequired                   = errors.New("raw sql required")
+	ErrParamMustBePtr                   = errors.New("param must be ptr")
+	ErrParamElemKindMustBeStruct        = errors.New("param elem kind must be struct")
+	ErrColumnShouldBeStringOrPtr        = errors.New("column should be string or ptr")
+	ErrDestOfGetToMustBePtr             = errors.New("dest of Get-to must be ptr")
+	ErrDestOfGetToSliceElemMustNotBePtr = errors.New("dest of Get-to slice elem kind must not be ptr")
+	ErrDestOfGetToSliceElemMustBeStruct = errors.New("dest of Get-to slice elem kind must be struct")
+)

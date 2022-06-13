@@ -1,7 +1,6 @@
 package orm
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -44,17 +43,17 @@ func CreateTableFromStruct[T Table](query Query[T]) (string, error) {
 	originQuery := query
 	db := originQuery.DB()
 	if db == nil {
-		return "", errors.New("no db exist")
+		return "", ErrDbNotSelected
 	}
 
 	if len(originQuery.tables) == 0 || len(originQuery.tables[0].ormFields) == 0 ||
 		originQuery.tables[0].table == nil || originQuery.tables[0].table.TableName() == "" {
-		return "", errors.New("no table exist")
+		return "", ErrTableNotSelected
 	}
 
 	dbColums := getMigrateColumns(originQuery.tables[0])
 	if len(dbColums) == 0 {
-		return "", errors.New("no column exist")
+		return "", ErrColumnNotSelected
 	}
 
 	dbColumnStrs := generateColumnStrings(dbColums)

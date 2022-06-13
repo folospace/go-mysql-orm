@@ -2,13 +2,12 @@ package orm
 
 import (
 	"database/sql"
-	"errors"
 )
 
 //excute raw
 func (m Query[T]) Execute() QueryResult {
 	if m.prepareSql == "" {
-		m.setErr(errors.New("sql not exist"))
+		m.setErr(ErrRawSqlRequired)
 	}
 	if m.result.Err != nil {
 		return m.result

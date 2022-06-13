@@ -27,13 +27,13 @@ const (
 
 func (m Query[T]) where(isOr bool, column interface{}, vals ...interface{}) Query[T] {
 	if len(vals) > 2 {
-		return m.setErr(errors.New("where vals should be less than 2"))
+		return m.setErr(errors.New("two many where-params"))
 	}
 
 	if len(vals) == 0 {
 		c, ok := m.isStringOrRaw(column)
 		if ok == false {
-			return m.setErr(errors.New("where only 1 param should be string as PrepareSql raw"))
+			return m.setErr(errors.New("where-param should be string while only 1 param exist"))
 		}
 		m.wheres = append(m.wheres, where{Raw: c, IsOr: isOr})
 	} else {
@@ -46,7 +46,7 @@ func (m Query[T]) where(isOr bool, column interface{}, vals ...interface{}) Quer
 		if len(vals) == 2 {
 			operator2, ok := m.isStringOrRaw(vals[0])
 			if ok == false {
-				return m.setErr(errors.New("where middle param should be operator string"))
+				return m.setErr(errors.New("the second where-param should be operator as string"))
 			}
 			operator = operator2
 			val = vals[1]
