@@ -52,8 +52,8 @@ func main() {
 
 	//query select
 	{
-		//get first user as struct
-		user, query := UserTable.Get()
+		//get first user (name='join') as struct
+		user, query := UserTable.Where(&UserTable.T.Name, "john").Get()
 		fmt.Println(user, query.Sql(), query.Error())
 
 		//get user where primary id = 1

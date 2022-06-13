@@ -54,8 +54,10 @@ func main() {
 ## select query usage
 
 ```go
-    //get first user as struct
-    user, query := UserTable.Get()
+    //get first user (name='join') as struct
+    user, query := UserTable.Where("name", "john").Get()
+    //replace raw string "name" to &T.Name (avoid misspelling and rename consequence)
+    user, query := UserTable.Where(&UserTable.T.Name, "john").Get()
     
     //get user where primary id = 1
     user, query = UserTable.Get(1)
