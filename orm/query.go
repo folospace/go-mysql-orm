@@ -97,7 +97,7 @@ func (m Query[T]) FromTable(table Table, alias ...string) Query[T] {
 	if len(alias) > 0 {
 		newTable.alias = alias[0]
 	} else if newTable.rawSql != "" {
-		newTable.alias = "sub"
+		newTable.alias = subqueryDefaultName
 	}
 	m.tables = append(m.tables, newTable)
 	return m

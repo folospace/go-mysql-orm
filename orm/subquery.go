@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+const subqueryDefaultName = "sub"
+
 type SubQuery struct {
 	raw       string
 	bindings  []interface{}
@@ -27,7 +29,7 @@ func (m SubQuery) TableName() string {
 		return m.tableName
 	}
 	if m.raw != "" {
-		return "sub"
+		return subqueryDefaultName
 	}
 	return ""
 }

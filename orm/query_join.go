@@ -35,7 +35,7 @@ func (m Query[T]) join(joinType JoinType, table Table, wheref func(Query[T]) Que
 	if len(alias) > 0 {
 		newTable.alias = alias[0]
 	} else if newTable.rawSql != "" {
-		newTable.alias = "sub"
+		newTable.alias = subqueryDefaultName
 	}
 
 	newTable.joinType = joinType
