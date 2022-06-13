@@ -62,15 +62,14 @@ func main() {
     //get user where primary id = 1
     user, query = UserTable.Get(1)
     
-    //get users as struct slice
-    users, query := UserTable.Limit(5).Gets()
-    
-    //get users by primary ids
+    //get users as slice of struct by primary ids
     users, query = UserTable.Gets(1, 2, 3)
     
     //get user first row as map[string]interface
     row, query := UserTable.GetRow()
-    
+    //it's useful when table struct not defined
+    row, query := orm.NewQueryRaw(db, "user").GetRow()
+
     //get user rows as []map[string]interface
     rows, query := UserTable.Limit(5).GetRows()
     
