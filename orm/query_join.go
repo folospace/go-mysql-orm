@@ -4,6 +4,15 @@ import (
 	"strings"
 )
 
+type JoinType string
+
+const (
+	JoinTypeInner JoinType = "inner join"
+	JoinTypeLeft  JoinType = "left join"
+	JoinTypeRight JoinType = "right join"
+	JoinTypeOuter JoinType = "outer join"
+)
+
 func (m Query[T]) Join(table Table, where func(join Query[T]) Query[T], alias ...string) Query[T] {
 	return m.join(JoinTypeInner, table, where, alias...)
 }
@@ -12,6 +21,9 @@ func (m Query[T]) LeftJoin(table Table, where func(join Query[T]) Query[T], alia
 }
 func (m Query[T]) RightJoin(table Table, where func(join Query[T]) Query[T], alias ...string) Query[T] {
 	return m.join(JoinTypeRight, table, where, alias...)
+}
+func (m Query[T]) OuterJoin(table Table, where func(join Query[T]) Query[T], alias ...string) Query[T] {
+	return m.join(JoinTypeOuter, table, where, alias...)
 }
 
 func (m Query[T]) join(joinType JoinType, table Table, wheref func(Query[T]) Query[T], alias ...string) Query[T] {

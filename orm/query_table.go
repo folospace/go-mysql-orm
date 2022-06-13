@@ -5,14 +5,6 @@ import (
 	"strings"
 )
 
-type JoinType string
-
-const (
-	JoinTypeInner JoinType = "join"
-	JoinTypeLeft  JoinType = "left join"
-	JoinTypeRight JoinType = "right join"
-)
-
 type queryTable struct {
 	table           Table
 	tableStruct     reflect.Value
