@@ -129,7 +129,7 @@ func (m Query[T]) scanValues(basePtrs []interface{}, rowColumns []string, rows *
 		}
 
 		for k, v := range tempPtrs {
-			if reflect.ValueOf(v).Elem().IsNil() {
+			if *v.(*interface{}) == nil {
 				felement := reflect.ValueOf(basePtrs[k]).Elem()
 				felement.Set(reflect.Zero(felement.Type()))
 				finalPtrs[k] = v
