@@ -85,6 +85,7 @@ func main() {
     UserTable.Select(&UserTable.T.Id, &UserTable.T.Name).GetTo(&userNameKeyById)
     
     //get users map key by name
+    //useful when find has-many relations
     var usersMapkeyByName map[string][]User
     UserTable.Select(&UserTable.T.Name, UserTable.AllCols()).GetTo(&usersMapkeyByName)
     
