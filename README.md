@@ -88,11 +88,13 @@ func main() {
     var usersMapkeyByName map[string][]User
     UserTable.Select(&UserTable.T.Name, UserTable.AllCols()).GetTo(&usersMapkeyByName)
     
+    //simplify window function
     //select orders (where user_id=1) with rank by order_amount
     OrderTable.Where(&OrderTable.T.UserId, 1).
     Select(OrderTable.AllCols()).
     SelectRank(&OrderTable.T.OrderAmount, "order_amount_rank").GetRows()
     
+    //simplify with recursive cte
     //select recursive to find children ...
     FileFolderTable.Where("id", 1).WithChildrenOnColumn("pid").GetRows()
     //select recursive to find parents ...
