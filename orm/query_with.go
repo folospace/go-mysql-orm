@@ -2,10 +2,10 @@ package orm
 
 import "strings"
 
-func (m Query[T]) WithParentsOnColumn(childPidColumn interface{}) Query[T] {
+func (m Query[T]) WithParentsOnColumn(pidColumn interface{}) Query[T] {
 	tempName := m.TableInterface().TableName() + "_cte"
 
-	col, err := m.parseColumn(childPidColumn)
+	col, err := m.parseColumn(pidColumn)
 	if err != nil {
 		return m.setErr(err)
 	}
@@ -23,10 +23,10 @@ func (m Query[T]) WithParentsOnColumn(childPidColumn interface{}) Query[T] {
 	return m.UnionAll(appendQuery.SubQuery())
 }
 
-func (m Query[T]) WithChildrenOnColumn(selfPidColumn interface{}) Query[T] {
+func (m Query[T]) WithChildrenOnColumn(pidColumn interface{}) Query[T] {
 	tempName := m.TableInterface().TableName() + "_cte"
 
-	pcol, err := m.parseColumn(selfPidColumn)
+	pcol, err := m.parseColumn(pidColumn)
 	if err != nil {
 		return m.setErr(err)
 	}
