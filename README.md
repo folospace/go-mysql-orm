@@ -8,7 +8,7 @@ Completed Features:
 - create mysql table from golang struct
 - create golang struct from mysql table
 - update query, insert query, delete query
-- transaction
+- support transaction
 - select (update | insert) with subquery
 - join (left join | right join) table
 - select with window function (rank())
@@ -34,6 +34,7 @@ type User struct {
     Name string `json:"name"`
 }
 
+//Table interface: implements two methods below 
 func (User) TableName() string {
     return "user"
 }
