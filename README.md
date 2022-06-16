@@ -2,6 +2,8 @@
 
 A golang orm package dedicated to simplify developing with mysql database.
 
+Base on [go-sql-driver/mysql](https://github.com/go-sql-driver/mysql).
+
 Completed Features:
 - support golang 1.18 generics
 - try to avoid using raw strings.
