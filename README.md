@@ -17,7 +17,9 @@ Completed Features:
 - select with common table expression (cte)
 
 ## Get Started
-
+```go
+ go get -u github.com/folospace/go-mysql-orm
+```
 ```go
 import (
     "database/sql"
