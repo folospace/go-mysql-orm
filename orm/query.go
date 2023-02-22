@@ -13,7 +13,7 @@ type Raw string
 
 type Query[T Table] struct {
     writeDb      *sql.DB
-    readDbs      []*sql.DB
+    readDbs      []*sql.DB //Not implemented
     tx           *sql.Tx
     tables       []*queryTable
     wheres       []where
