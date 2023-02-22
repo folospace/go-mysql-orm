@@ -153,6 +153,14 @@ func (m Query[T]) OrWhere(column interface{}, vals ...interface{}) Query[T] {
     return m.where(true, column, vals...)
 }
 
+func (m Query[T]) WherePrimary(val interface{}) Query[T] {
+    t := m.where(false, m.tables[0].tableStruct.Field(0).Addr().Interface(), val)
+    return t
+}
+func (m Query[T]) OrWherePrimary(val interface{}) Query[T] {
+    return m.where(true, m.tables[0].tableStruct.Field(0).Addr().Interface(), val)
+}
+
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
