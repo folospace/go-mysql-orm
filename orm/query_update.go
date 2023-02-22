@@ -77,7 +77,7 @@ func (m Query[T]) generateUpdateStr(updates []UpdateColumn, bindings *[]interfac
         } else if reflect.ValueOf(v.Val).Kind() == reflect.Ptr {
             if v.Val == v.Column {
                 dotIndex := strings.LastIndex(column, ".")
-                temp = column + " = values(" + column[dotIndex+1:] + ")"
+                temp = column + " = values(" + strings.Trim(column[dotIndex+1:], "`") + ")"
             } else {
                 targetColumn, err := m.parseColumn(v.Val)
                 if err != nil {
