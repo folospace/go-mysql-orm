@@ -11,7 +11,9 @@ var tdb, _ = sql.Open("mysql", "rfamro@tcp(mysql-rfam-public.ebi.ac.uk:4497)/Rfa
 
 func TestSelect(t *testing.T) {
     t.Run("query_raw", func(t *testing.T) {
-        data, query := orm.NewQueryRaw("family", tdb).Limit(5).GetRows()
+
+        var data []map[string]string
+        query := orm.NewQueryRaw("", tdb).Raw("show create table family").GetTo(&data)
         t.Log(data)
         t.Log(query.Sql())
         t.Log(query.Error())

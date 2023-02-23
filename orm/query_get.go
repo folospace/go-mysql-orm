@@ -302,9 +302,11 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
         case reflect.Map:
             var basePtrs = make([]interface{}, len(rowColumns))
 
+            valEle := ele.Elem()
+
             for k := range basePtrs {
-                var temp interface{}
-                basePtrs[k] = &temp
+                //var temp interface{}
+                basePtrs[k] = reflect.New(valEle).Interface()
             }
             gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
                 newVal := reflect.MakeMap(ele)
