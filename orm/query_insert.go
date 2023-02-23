@@ -22,7 +22,7 @@ func (m Query[T]) InsertsIgnore(data []T, updates []UpdateColumn, tableFieldPtrs
     return m.insert(true, data, tableFieldPtrs, updates)
 }
 
-func (m Query[T]) InsertSubquery(data SubQuery, tableFieldPtrs []interface{}, updates ...UpdateColumn) QueryResult {
+func (m Query[T]) InsertSubquery(data SubQuery, updates []UpdateColumn, tableFieldPtrs ...interface{}) QueryResult {
     return m.insert(true, data, tableFieldPtrs, updates)
 }
 
