@@ -60,30 +60,13 @@ func main() {
 
 ```go
     //get first user (name='join') as struct
-    user, query := UserTable.Where("name", "john").Get()
-    //replace raw string "name" to &T.Name (avoid misspelling and rename consequence)
     user, query := UserTable.Where(&UserTable.T.Name, "john").Get()
-    
-    //get user where primary id = 1
-    user, query = UserTable.Get(1)
     
     //get users as slice of struct by primary ids
     users, query = UserTable.Gets(1, 2, 3)
     
-    //get user first row as map[string]interface
-    row, query := UserTable.GetRow()
-    //it's useful when table struct not defined
-    row, query := orm.NewQueryRaw(db, "user").GetRow()
-
-    //get user rows as []map[string]interface
-    rows, query := UserTable.Limit(5).GetRows()
-    
     //get users count(*)
     count, query := UserTable.GetCount()
-    
-    //get users map key by id
-    var usersKeyById map[int]User
-    UserTable.GetTo(&usersKeyById)
     
     //get user names map key by id
     var userNameKeyById map[int]string
@@ -110,8 +93,8 @@ func main() {
 ## update | delete | insert
 
 ```go
-    //update user set name="hello" where id=1
-    UserTable.Where(&UserTable.T.Id, 1).Update(&UserTable.T.Name, "hello")
+    //update user set name="hello" where id in (1,2,3)
+    UserTable.WherePrimary(1,2,3).Update(&UserTable.T.Name, "hello")
     
     //query delete
     UserTable.Delete(1, 2, 3)
@@ -119,6 +102,10 @@ func main() {
     //query insert
     _ = UserTable.Insert(User{Name: "han"}).LastInsertId //insert one row and get id
 
+    //insert batch on duplicate key update name=values(name)
+    _ = UserTable.InsertsIgnore([]User{{Id: 1, Name: "han"}, {Id: 2, Name: "jen"}},
+    []orm.UpdateColumn{{Column: &UserTable.T.Name, Val: &UserTable.T.Name}})
+    
 ```
 
 ### join and where

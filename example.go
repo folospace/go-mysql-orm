@@ -60,10 +60,6 @@ func main() {
         users, query := UserTable.Gets(1, 2, 3)
         fmt.Println(users, query.Sql(), query.Error())
 
-        //equals get users id in (1,2,3)
-        users, query = UserTable.WherePrimary(1, 2, 3).Gets()
-        fmt.Println(users, query.Sql(), query.Error())
-
         //get user rows as []map[string]interface
         rows, query := UserTable.Limit(5).GetRows()
         fmt.Println(rows, query.Sql(), query.Error())
@@ -89,7 +85,7 @@ func main() {
     //query update and delete and insert
     {
         //update user set name="hello" where id=1
-        UserTable.WherePrimary(1).Update(&UserTable.T.Name, "hello")
+        UserTable.WherePrimary(1, 2, 3).Update(&UserTable.T.Name, "hello")
 
         //query delete
         UserTable.Delete(1, 2, 3)
