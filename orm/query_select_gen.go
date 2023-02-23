@@ -12,7 +12,7 @@ func (m Query[T]) SubQuery() SubQuery {
         mt := cte.WithRecursiveCte(m.SubQuery(), cte.T.TableName())
         tempTable := mt.generateSelectQuery(mt.columns...)
 
-        tempTable.db = mt.writeDb
+        tempTable.dbs = mt.writeAndReadDbs
         tempTable.tx = mt.tx
         tempTable.dbName = mt.tables[0].table.DatabaseName()
         tempTable.err = mt.result.Err
@@ -23,7 +23,7 @@ func (m Query[T]) SubQuery() SubQuery {
         mt := m
         tempTable := mt.generateSelectQuery(mt.columns...)
 
-        tempTable.db = mt.writeDb
+        tempTable.dbs = mt.writeAndReadDbs
         tempTable.tx = mt.tx
         tempTable.dbName = mt.tables[0].table.DatabaseName()
         tempTable.err = mt.result.Err

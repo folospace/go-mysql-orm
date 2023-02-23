@@ -3,6 +3,7 @@ package orm
 import (
     "database/sql"
     "errors"
+    "math/rand"
     "reflect"
     "runtime"
     "strconv"
@@ -12,49 +13,48 @@ import (
 type Raw string
 
 type Query[T Table] struct {
-    writeDb      *sql.DB
-    readDbs      []*sql.DB //Not implemented
-    tx           *sql.Tx
-    tables       []*queryTable
-    wheres       []where
-    result       QueryResult
-    limit        int
-    offset       int
-    partitionbys []string
-    orderbys     []string
-    forUpdate    SelectForUpdateType
-    T            *T
-    columns      []interface{}
-    prepareSql   string
-    bindings     []interface{}
-    groupBy      []interface{}
-    having       []where
-    curFileName  string
-    unions       []SubQuery
-    withCtes     []SubQuery
-    windows      []SubQuery
-    self         *Query[SubQuery]
+    writeAndReadDbs []*sql.DB //first element as write db, rest as read dbs
+    tx              *sql.Tx
+    tables          []*queryTable
+    wheres          []where
+    result          QueryResult
+    limit           int
+    offset          int
+    partitionbys    []string
+    orderbys        []string
+    forUpdate       SelectForUpdateType
+    T               *T
+    columns         []interface{}
+    prepareSql      string
+    bindings        []interface{}
+    groupBy         []interface{}
+    having          []where
+    curFileName     string
+    unions          []SubQuery
+    withCtes        []SubQuery
+    windows         []SubQuery
+    self            *Query[SubQuery]
 }
 
-func NewQuery[T Table](t T, writeDb *sql.DB, readDbs ...*sql.DB) Query[T] {
-    if len(readDbs) == 0 {
-        readDbs = append(readDbs, writeDb)
-    }
-    q := Query[T]{T: &t, writeDb: writeDb, readDbs: readDbs}
+//query table[struct] generics
+func NewQuery[T Table](t T, writeAndReadDbs ...*sql.DB) Query[T] {
+    q := Query[T]{T: &t, writeAndReadDbs: writeAndReadDbs}
     q.curFileName = q.currentFilename()
     return q.FromTable(q.TableInterface())
 }
 
-func NewQuerySub(subquery SubQuery) Query[SubQuery] {
-    return NewQuery(subquery, subquery.db)
+//query raw, tablename can be empty
+func NewQueryRaw(tableName string, writeAndReadDbs ...*sql.DB) Query[SubQuery] {
+    sq := SubQuery{}
+    if tableName != "" {
+        sq.tableName = tableName
+    }
+    return NewQuery(sq, writeAndReadDbs...)
 }
 
-func NewQueryRaw(db *sql.DB, tableName ...string) Query[SubQuery] {
-    sq := SubQuery{}
-    if len(tableName) > 0 {
-        sq.tableName = tableName[0]
-    }
-    return NewQuery(sq, db)
+//query from subquery
+func NewQuerySub(subquery SubQuery) Query[SubQuery] {
+    return NewQuery(subquery, subquery.dbs...)
 }
 
 func (m Query[T]) TableInterface() Table {
@@ -65,17 +65,31 @@ func (m Query[T]) AllCols() string {
     return m.tables[0].getAliasOrTableName() + ".*"
 }
 
-func (m Query[T]) UseDB(db *sql.DB) Query[T] {
-    m.writeDb = db
+func (m Query[T]) UseDB(db ...*sql.DB) Query[T] {
+    m.writeAndReadDbs = db
     return m
 }
+
 func (m Query[T]) UseTx(tx *sql.Tx) Query[T] {
     m.tx = tx
     return m
 }
 
 func (m Query[T]) DB() *sql.DB {
-    return m.writeDb
+    return m.writeDB()
+}
+func (m Query[T]) writeDB() *sql.DB {
+    if len(m.writeAndReadDbs) > 0 {
+        return m.writeAndReadDbs[0]
+    }
+    return nil
+}
+func (m Query[T]) readDB() *sql.DB {
+    if len(m.writeAndReadDbs) > 1 {
+        return m.writeAndReadDbs[rand.Intn(len(m.writeAndReadDbs)-1)+1] //rand get db
+    } else {
+        return m.writeDB()
+    }
 }
 func (m Query[T]) dbTx() *sql.Tx {
     return m.tx
