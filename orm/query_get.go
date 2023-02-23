@@ -7,27 +7,17 @@ import (
 )
 
 //get first T
-func (m Query[T]) Get(primaryValue ...interface{}) (T, QueryResult) {
+func (m Query[T]) Get(primaryIds ...interface{}) (T, QueryResult) {
     var ret T
-    if len(primaryValue) > 0 {
-        res := m.Where(m.tables[0].tableStruct.Field(0).Addr().Interface(), primaryValue[0]).Limit(1).GetTo(&ret)
-        return ret, res
-    } else {
-        res := m.Limit(1).GetTo(&ret)
-        return ret, res
-    }
+    res := m.WherePrimary(primaryIds...).Limit(1).GetTo(&ret)
+    return ret, res
 }
 
 //get slice T
 func (m Query[T]) Gets(primaryIds ...interface{}) ([]T, QueryResult) {
     var ret []T
-    if len(primaryIds) > 0 {
-        res := m.Where(m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, primaryIds).GetTo(&ret)
-        return ret, res
-    } else {
-        res := m.GetTo(&ret)
-        return ret, res
-    }
+    res := m.WherePrimary(primaryIds...).GetTo(&ret)
+    return ret, res
 }
 
 //get first row
