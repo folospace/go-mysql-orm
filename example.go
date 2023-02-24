@@ -5,11 +5,10 @@ import (
     "errors"
     "fmt"
     "github.com/folospace/go-mysql-orm/orm"
-    _ "github.com/go-sql-driver/mysql"
 )
 
 //connect mysql db
-var db, _ = sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/mydb?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
+var db, _ = orm.OpenMysql("user:password@tcp(127.0.0.1:3306)/mydb?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
 
 //user table model
 var UserTable = orm.NewQuery(User{}, db)
