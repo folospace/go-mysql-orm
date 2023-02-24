@@ -198,7 +198,7 @@ func main() {
 //) 
 ```
 
-## Test in [go playground](https://go.dev/play/p/IjbPU1hCHMe)
+## Test in [go playground](https://go.dev/play/p/n10KoZ15EwW)
 
 ## contribute
 
