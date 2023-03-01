@@ -1,9 +1,5 @@
 package orm
 
-import (
-    "database/sql"
-)
-
 func (m Query[T]) Delete(primaryIds ...interface{}) QueryResult {
     if len(m.tables) == 0 {
         m.setErr(ErrTableNotSelected)
@@ -38,27 +34,8 @@ func (m Query[T]) delete() QueryResult {
         rawSql += " " + orderLimitOffsetStr
     }
 
-    m.result.PrepareSql = rawSql
-    m.result.Bindings = bindings
+    m.prepareSql = rawSql
+    m.bindings = bindings
 
-    if m.result.Err != nil {
-        return m.result
-    }
-
-    var res sql.Result
-    var err error
-    if m.dbTx() != nil {
-        res, err = m.dbTx().Exec(rawSql, bindings...)
-    } else {
-        res, err = m.DB().Exec(rawSql, bindings...)
-    }
-
-    if err != nil {
-        m.result.Err = err
-    } else if res != nil {
-        m.result.LastInsertId, m.result.Err = res.LastInsertId()
-        m.result.RowsAffected, m.result.Err = res.RowsAffected()
-    }
-
-    return m.result
+    return m.Execute()
 }

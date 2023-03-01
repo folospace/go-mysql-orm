@@ -1,7 +1,6 @@
 package orm
 
 import (
-    "database/sql"
     "errors"
     "reflect"
     "strings"
@@ -172,22 +171,9 @@ func (m Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interfa
     }
 
     rawSql += ";"
-    m.result.PrepareSql = rawSql
-    m.result.Bindings = bindings
 
-    var insertRes sql.Result
-    if m.dbTx() != nil {
-        insertRes, err = m.dbTx().Exec(rawSql, bindings...)
-    } else {
-        insertRes, err = m.DB().Exec(rawSql, bindings...)
-    }
+    m.prepareSql = rawSql
+    m.bindings = bindings
 
-    m.setErr(err)
-    if insertRes != nil {
-        m.result.LastInsertId, err = insertRes.LastInsertId()
-        m.setErr(err)
-        m.result.RowsAffected, err = insertRes.RowsAffected()
-        m.setErr(err)
-    }
-    return m.result
+    return m.Execute()
 }

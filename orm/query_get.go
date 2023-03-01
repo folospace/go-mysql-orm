@@ -82,9 +82,17 @@ func (m Query[T]) GetTo(destPtr interface{}) QueryResult {
     var rows *sql.Rows
     var err error
     if m.dbTx() != nil {
-        rows, err = m.dbTx().Query(tempTable.raw, tempTable.bindings...)
+        if m.ctx != nil {
+            rows, err = m.dbTx().QueryContext(*m.ctx, tempTable.raw, tempTable.bindings...)
+        } else {
+            rows, err = m.dbTx().Query(tempTable.raw, tempTable.bindings...)
+        }
     } else {
-        rows, err = m.readDB().Query(tempTable.raw, tempTable.bindings...)
+        if m.ctx != nil {
+            rows, err = m.readDB().QueryContext(*m.ctx, tempTable.raw, tempTable.bindings...)
+        } else {
+            rows, err = m.readDB().Query(tempTable.raw, tempTable.bindings...)
+        }
     }
 
     defer func() {

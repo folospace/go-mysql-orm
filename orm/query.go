@@ -1,6 +1,7 @@
 package orm
 
 import (
+    "context"
     "database/sql"
     "errors"
     "math/rand"
@@ -15,6 +16,7 @@ type Raw string
 type Query[T Table] struct {
     writeAndReadDbs []*sql.DB //first element as write db, rest as read dbs
     tx              *sql.Tx
+    ctx             *context.Context
     tables          []*queryTable
     wheres          []where
     result          QueryResult

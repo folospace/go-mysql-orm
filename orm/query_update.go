@@ -1,7 +1,6 @@
 package orm
 
 import (
-    "database/sql"
     "reflect"
     "strings"
 )
@@ -36,29 +35,10 @@ func (m Query[T]) Updates(updates ...UpdateColumn) QueryResult {
         rawSql += " " + orderAndLimitStr
     }
 
-    m.result.PrepareSql = rawSql
-    m.result.Bindings = bindings
+    m.prepareSql = rawSql
+    m.bindings = bindings
 
-    if m.result.Err != nil {
-        return m.result
-    }
-
-    var res sql.Result
-    var err error
-    if m.dbTx() != nil {
-        res, err = m.dbTx().Exec(rawSql, bindings...)
-    } else {
-        res, err = m.DB().Exec(rawSql, bindings...)
-    }
-
-    if err != nil {
-        m.result.Err = err
-    } else if res != nil {
-        m.result.LastInsertId, m.result.Err = res.LastInsertId()
-        m.result.RowsAffected, m.result.Err = res.RowsAffected()
-    }
-
-    return m.result
+    return m.Execute()
 }
 
 func (m Query[T]) generateUpdateStr(updates []UpdateColumn, bindings *[]interface{}) string {

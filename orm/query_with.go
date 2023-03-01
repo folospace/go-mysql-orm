@@ -1,6 +1,9 @@
 package orm
 
-import "strings"
+import (
+    "context"
+    "strings"
+)
 
 func (m Query[T]) WithParentsOnColumn(pidColumn interface{}) Query[T] {
     tempName := m.TableInterface().TableName() + "_cte"
@@ -64,5 +67,10 @@ func (m Query[T]) withCte(subquery SubQuery, cteName string, recursive bool, col
     subquery.recursive = recursive
     subquery.columns = columns
     m.withCtes = append(m.withCtes, subquery)
+    return m
+}
+
+func (m Query[T]) WithContext(ctx context.Context) Query[T] {
+    m.ctx = &ctx
     return m
 }
