@@ -36,6 +36,7 @@ type Query[T Table] struct {
     withCtes        []SubQuery
     windows         []SubQuery
     self            *Query[SubQuery]
+    selectTimeout   string
 }
 
 //query table[struct] generics

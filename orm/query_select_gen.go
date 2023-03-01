@@ -18,7 +18,6 @@ func (m Query[T]) SubQuery() SubQuery {
         tempTable.err = mt.result.Err
 
         return tempTable
-
     } else {
         mt := m
         tempTable := mt.generateSelectQuery(mt.columns...)
@@ -84,7 +83,12 @@ func (m Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
 
         orderLimitOffsetStr := m.getOrderAndLimitSqlStr()
 
-        rawSql += "select " + selectStr
+        var selectKeyword = "select"
+        if m.selectTimeout != "" {
+            selectKeyword += " " + m.selectTimeout
+        }
+
+        rawSql += selectKeyword + " " + selectStr
 
         if tableStr != "" {
             rawSql += " from " + tableStr
