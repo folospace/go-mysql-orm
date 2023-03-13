@@ -196,6 +196,7 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
         case reflect.Slice:
             switch ele.Elem().Kind() {
             case reflect.Struct:
+                keyAddr := reflect.New(reflectMap.Key()).Interface()
                 structAddr := reflect.New(ele.Elem()).Interface()
                 structAddrMap, err := getStructFieldAddrMap(structAddr)
                 if err != nil {
@@ -210,6 +211,7 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
                         basePtrs[k] = &temp
                     }
                 }
+                basePtrs[0] = keyAddr
                 gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
                     index := reflect.ValueOf(basePtrs[0]).Elem()
                     tempSlice := newVal.MapIndex(index)
