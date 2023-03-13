@@ -166,12 +166,13 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
 
     switch val.Kind() {
     case reflect.Map:
-        ele := reflect.TypeOf(dest).Elem().Elem()
+        reflectMap := reflect.TypeOf(dest).Elem()
+
+        ele := reflectMap.Elem()
         if ele.Kind() == reflect.Ptr {
             return ErrDestOfGetToSliceElemMustNotBePtr
         }
-
-        newVal := reflect.MakeMap(reflect.TypeOf(dest).Elem())
+        newVal := reflect.MakeMap(reflectMap)
         switch ele.Kind() {
         case reflect.Struct:
             structAddr := reflect.New(ele).Interface()
@@ -193,32 +194,49 @@ func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
             }, false)
             base.Elem().Set(newVal)
         case reflect.Slice:
-            if ele.Elem().Kind() != reflect.Struct {
-                return ErrDestOfGetToSliceElemMustBeStruct
-            }
-            structAddr := reflect.New(ele.Elem()).Interface()
-            structAddrMap, err := getStructFieldAddrMap(structAddr)
-            if err != nil {
-                return err
-            }
-            var basePtrs = make([]interface{}, len(rowColumns))
+            switch ele.Elem().Kind() {
+            case reflect.Struct:
+                structAddr := reflect.New(ele.Elem()).Interface()
+                structAddrMap, err := getStructFieldAddrMap(structAddr)
+                if err != nil {
+                    return err
+                }
+                var basePtrs = make([]interface{}, len(rowColumns))
 
-            for k, v := range rowColumns {
-                basePtrs[k] = structAddrMap[v]
-                if basePtrs[k] == nil {
-                    var temp interface{}
-                    basePtrs[k] = &temp
+                for k, v := range rowColumns {
+                    basePtrs[k] = structAddrMap[v]
+                    if basePtrs[k] == nil {
+                        var temp interface{}
+                        basePtrs[k] = &temp
+                    }
                 }
+                gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
+                    index := reflect.ValueOf(basePtrs[0]).Elem()
+                    tempSlice := newVal.MapIndex(index)
+                    if tempSlice.IsValid() == false {
+                        tempSlice = reflect.MakeSlice(ele, 0, 0)
+                    }
+                    newVal.SetMapIndex(index, reflect.Append(tempSlice, reflect.ValueOf(structAddr).Elem()))
+                }, false)
+                base.Elem().Set(newVal)
+            default:
+                keyAddr := reflect.New(reflectMap.Key()).Interface()
+                valAddr := reflect.New(ele.Elem()).Interface()
+
+                var basePtrs = make([]interface{}, 2)
+                basePtrs[0] = keyAddr
+                basePtrs[1] = valAddr
+
+                gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
+                    index := reflect.ValueOf(basePtrs[0]).Elem()
+                    tempSlice := newVal.MapIndex(index)
+                    if tempSlice.IsValid() == false {
+                        tempSlice = reflect.MakeSlice(ele, 0, 0)
+                    }
+                    newVal.SetMapIndex(index, reflect.Append(tempSlice, reflect.ValueOf(valAddr).Elem()))
+                }, false)
+                base.Elem().Set(newVal)
             }
-            gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
-                index := reflect.ValueOf(basePtrs[0]).Elem()
-                tempSlice := newVal.MapIndex(index)
-                if tempSlice.IsValid() == false {
-                    tempSlice = reflect.MakeSlice(ele, 0, 0)
-                }
-                newVal.SetMapIndex(index, reflect.Append(tempSlice, reflect.ValueOf(structAddr).Elem()))
-            }, false)
-            base.Elem().Set(newVal)
 
         case reflect.Interface:
             if reflect.TypeOf(dest).Elem().Key().Kind() == reflect.String {
