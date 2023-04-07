@@ -66,6 +66,7 @@ func (m Query[T]) withCte(subquery SubQuery, cteName string, recursive bool, col
     subquery.tableName = cteName
     subquery.recursive = recursive
     subquery.columns = columns
+    m.setErr(subquery.err)
     m.withCtes = append(m.withCtes, subquery)
     return m
 }
