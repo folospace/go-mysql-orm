@@ -58,7 +58,7 @@ func (m Query[T]) GetCount() (int64, QueryResult) {
 
         newQuery := NewQuery(tempTable, tempTable.dbs...)
 
-        res := newQuery.Select("count(*)").GetTo(&ret)
+        res := newQuery.setErr(tempTable.err).Select("count(*)").GetTo(&ret)
         return ret, res
     }
 }
