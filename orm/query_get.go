@@ -74,6 +74,9 @@ func (m Query[T]) GetTo(destPtr interface{}) QueryResult {
 
     m.result.PrepareSql = tempTable.raw
     m.result.Bindings = tempTable.bindings
+    if tempTable.err != nil {
+        m.result.Err = tempTable.err
+    }
 
     if m.result.Err != nil {
         return m.result

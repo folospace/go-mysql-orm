@@ -15,7 +15,9 @@ func (m Query[T]) SubQuery() SubQuery {
         tempTable.dbs = mt.writeAndReadDbs
         tempTable.tx = mt.tx
         tempTable.dbName = mt.tables[0].table.DatabaseName()
-        tempTable.err = mt.result.Err
+        if mt.result.Err != nil {
+            tempTable.err = mt.result.Err
+        }
 
         return tempTable
     } else {
@@ -25,7 +27,9 @@ func (m Query[T]) SubQuery() SubQuery {
         tempTable.dbs = mt.writeAndReadDbs
         tempTable.tx = mt.tx
         tempTable.dbName = mt.tables[0].table.DatabaseName()
-        tempTable.err = mt.result.Err
+        if mt.result.Err != nil {
+            tempTable.err = mt.result.Err
+        }
 
         return tempTable
     }

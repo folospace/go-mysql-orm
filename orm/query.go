@@ -226,7 +226,7 @@ func (m Query[T]) parseColumn(v interface{}) (string, error) {
         } else {
             return ret, nil
         }
-    } else if columnVar.Kind() == reflect.Ptr {
+    } else if columnVar.Kind() == reflect.Ptr && columnVar.Elem().CanAddr() {
         table, column := m.getTableColumn(columnVar)
         if table == nil {
             return "", ErrColumnNotExisted

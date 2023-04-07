@@ -1,15 +1,12 @@
 package main
 
 import (
-    "database/sql"
-    "fmt"
     "github.com/folospace/go-mysql-orm/orm"
-    _ "github.com/go-sql-driver/mysql"
     "testing"
     "time"
 )
 
-var tdb, _ = sql.Open("mysql", "rfamro@tcp(mysql-rfam-public.ebi.ac.uk:4497)/Rfam?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
+var tdb, _ = orm.OpenMysql("rfamro@tcp(mysql-rfam-public.ebi.ac.uk:4497)/Rfam?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
 
 var FamilyTable2 = orm.NewQuery(Family2{}, tdb)
 
@@ -60,11 +57,57 @@ func (Family2) DatabaseName() string {
 }
 
 func TestSelect(t *testing.T) {
-    t.Run("query_raw", func(t *testing.T) {
+    t.Run("mysql_version", func(t *testing.T) {
+        var data string
+        query := FamilyTable2.Raw("select version()").GetTo(&data)
 
-        var data map[string][]Family
-        query := FamilyTable2.Select("type", FamilyTable2.AllCols()).Limit(5).GetTo(&data)
-        t.Log(fmt.Sprintf("%+v", data))
+        t.Log(data)
+        t.Log(query.Sql())
+        t.Log(query.Error())
+    })
+    t.Run("query_timeout", func(t *testing.T) {
+        var data map[string]int
+        query := FamilyTable2.Raw("show variables like '%timeout%'").GetTo(&data)
+
+        t.Log(data)
+        t.Log(query.Sql())
+        t.Log(query.Error())
+    })
+    t.Run("query_table_sql", func(t *testing.T) {
+        var data map[string]string
+        query := FamilyTable2.Raw("show create table " + FamilyTable2.T.TableName()).GetTo(&data)
+
+        t.Log(data)
+        t.Log(query.Sql())
+        t.Log(query.Error())
+    })
+    t.Run("count_total", func(t *testing.T) {
+        var data int64
+        query := FamilyTable2.Select("count(*)").GetTo(&data)
+        t.Log(data)
+
+        data, query = FamilyTable2.GetCount()
+        t.Log(data)
+
+        t.Log(query.Sql())
+        t.Log(query.Error())
+    })
+    t.Run("count_distinct_total", func(t *testing.T) {
+        var data int64
+        query := FamilyTable2.Select("count(distinct(type))").GetTo(&data)
+        t.Log(data)
+
+        data, query = FamilyTable2.GroupBy(&FamilyTable2.T.Type).GetCount()
+        t.Log(data)
+
+        t.Log(query.Sql())
+        t.Log(query.Error())
+    })
+    t.Run("result_to_map", func(t *testing.T) {
+        var data map[string][]string
+        query := FamilyTable2.Select(&FamilyTable2.T.Type, &FamilyTable2.T.RfamAcc).Limit(20).GetTo(&data)
+        t.Log(data)
+
         t.Log(query.Sql())
         t.Log(query.Error())
     })
