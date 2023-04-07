@@ -11,7 +11,7 @@ var (
     ErrRawSqlRequired                   = errors.New("raw sql required")
     ErrParamMustBePtr                   = errors.New("param must be ptr")
     ErrParamElemKindMustBeStruct        = errors.New("param elem kind must be struct")
-    ErrColumnShouldBeStringOrPtr        = errors.New("select|where column should be string or ptr of struct field")
+    ErrColumnShouldBeStringOrPtr        = errors.New("select|where column should be string or ptr of Table.T.field")
     ErrDestOfGetToMustBePtr             = errors.New("dest of Get-to must be ptr")
     ErrDestOfGetToSliceElemMustNotBePtr = errors.New("dest of Get-to slice elem kind must not be ptr")
 )

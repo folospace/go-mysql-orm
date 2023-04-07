@@ -223,6 +223,8 @@ func (m Query[T]) parseColumn(v interface{}) (string, error) {
                 prefix += "."
             }
             return prefix + ret, nil
+        } else if ret == "" {
+            return "", ErrColumnShouldBeStringOrPtr
         } else {
             return ret, nil
         }

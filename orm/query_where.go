@@ -35,7 +35,11 @@ func (m Query[T]) where(isOr bool, column interface{}, vals ...interface{}) Quer
         if ok == false {
             return m.setErr(errors.New("where-param should be string while only 1 param exist"))
         }
-        m.wheres = append(m.wheres, where{Raw: c, IsOr: isOr})
+        if c != "" {
+            m.wheres = append(m.wheres, where{Raw: c, IsOr: isOr})
+        } else {
+            return m.setErr(errors.New("where-param should not be empty string"))
+        }
     } else {
         c, err := m.parseColumn(column)
         if err != nil {
