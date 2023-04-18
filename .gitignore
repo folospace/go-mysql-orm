@@ -1,4 +1,4 @@
 .idea/
 .DS_Store
 vendor/
-test.go
+local_test.go
