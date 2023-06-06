@@ -176,7 +176,11 @@ func (m Query[T]) OrWherePrimary(val ...interface{}) Query[T] {
     if len(val) > 1 {
         return m.where(true, m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, val)
     } else if len(val) == 1 {
-        return m.where(true, m.tables[0].tableStruct.Field(0).Addr().Interface(), val[0])
+        if reflect.TypeOf(val[0]).Kind() == reflect.Slice {
+            return m.where(true, m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, val[0])
+        } else {
+            return m.where(true, m.tables[0].tableStruct.Field(0).Addr().Interface(), val[0])
+        }
     } else {
         return m
     }
