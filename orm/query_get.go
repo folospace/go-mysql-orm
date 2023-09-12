@@ -9,14 +9,14 @@ import (
 //get first T
 func (m Query[T]) Get(primaryIds ...interface{}) (T, QueryResult) {
     var ret T
-    res := m.WherePrimary(primaryIds...).Limit(1).GetTo(&ret)
+    res := m.WherePrimary(primaryIds).Limit(1).GetTo(&ret)
     return ret, res
 }
 
 //get slice T
 func (m Query[T]) Gets(primaryIds ...interface{}) ([]T, QueryResult) {
     var ret []T
-    res := m.WherePrimary(primaryIds...).GetTo(&ret)
+    res := m.WherePrimary(primaryIds).GetTo(&ret)
     return ret, res
 }
 

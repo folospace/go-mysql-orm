@@ -6,7 +6,7 @@ func (m Query[T]) Delete(primaryIds ...interface{}) QueryResult {
         return m.result
     }
     if len(primaryIds) > 0 {
-        return m.WherePrimary(primaryIds...).delete()
+        return m.WherePrimary(primaryIds).delete()
     } else {
         return m.delete()
     }

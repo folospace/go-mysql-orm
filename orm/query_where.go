@@ -157,33 +157,41 @@ func (m Query[T]) OrWhere(column interface{}, vals ...interface{}) Query[T] {
     return m.where(true, column, vals...)
 }
 
-//where column(primary) = ? or column(primary) in (?)
-func (m Query[T]) WherePrimary(val ...interface{}) Query[T] {
-    if len(val) > 1 {
-        return m.where(false, m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, val)
-    } else if len(val) == 1 {
-        if reflect.TypeOf(val[0]).Kind() == reflect.Slice {
-            return m.where(false, m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, val[0])
+//short for Where(primaryKey, vals...)
+func (m Query[T]) WherePrimary(operator interface{}, vals ...interface{}) Query[T] {
+    //operator as vals
+    if len(vals) == 0 {
+        vals = []interface{}{operator}
+        reflectVar := reflect.ValueOf(operator)
+        if reflectVar.Kind() == reflect.Slice {
+            if reflectVar.Len() == 0 {
+                return m
+            }
+            operator = WhereIn
         } else {
-            return m.where(false, m.tables[0].tableStruct.Field(0).Addr().Interface(), val[0])
+            operator = WhereEqual
         }
-    } else {
-        return m
     }
+
+    return m.where(false, m.tables[0].tableStruct.Field(0).Addr().Interface(), operator, vals[0])
 }
 
-func (m Query[T]) OrWherePrimary(val ...interface{}) Query[T] {
-    if len(val) > 1 {
-        return m.where(true, m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, val)
-    } else if len(val) == 1 {
-        if reflect.TypeOf(val[0]).Kind() == reflect.Slice {
-            return m.where(true, m.tables[0].tableStruct.Field(0).Addr().Interface(), WhereIn, val[0])
+//short for OrWhere(primaryKey, vals...)
+func (m Query[T]) OrWherePrimary(operator interface{}, vals ...interface{}) Query[T] {
+    //operator as vals
+    if len(vals) == 0 {
+        reflectVar := reflect.ValueOf(operator)
+        if reflectVar.Kind() == reflect.Slice {
+            if reflectVar.Len() == 0 {
+                return m
+            }
+            operator = WhereIn
         } else {
-            return m.where(true, m.tables[0].tableStruct.Field(0).Addr().Interface(), val[0])
+            operator = WhereEqual
         }
-    } else {
-        return m
     }
+
+    return m.where(true, m.tables[0].tableStruct.Field(0).Addr().Interface(), operator, vals[0])
 }
 
 //"id=1"

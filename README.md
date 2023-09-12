@@ -92,8 +92,8 @@ func main() {
 ## update | delete | insert
 
 ```go
-    //update user set name="hello" where id in (1,2,3)
-    UserTable.WherePrimary(1,2,3).Update(&UserTable.T.Name, "hello")
+    //update user set name="hello" where id = 1
+    UserTable.WherePrimary(1).Update(&UserTable.T.Name, "hello")
     
     //query delete
     UserTable.Delete(1, 2, 3)

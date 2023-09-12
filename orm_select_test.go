@@ -111,4 +111,12 @@ func TestSelect(t *testing.T) {
         t.Log(query.Sql())
         t.Log(query.Error())
     })
+    t.Run("where_primary", func(t *testing.T) {
+        data, query := FamilyTable2.WherePrimary("RF00006").Get()
+
+        t.Log(data)
+
+        t.Log(query.Sql())
+        t.Log(query.Error())
+    })
 }
