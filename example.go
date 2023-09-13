@@ -11,7 +11,7 @@ import (
 var db, _ = orm.OpenMysql("user:password@tcp(127.0.0.1:3306)/mydb?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
 
 //query user
-var UserQuery = orm.NewQuery(User{})
+var UserQuery = orm.NewQuery(&User{})
 
 type User struct {
     Id   int    `json:"id"`
@@ -29,7 +29,7 @@ func (User) TableName() string {
 }
 
 //user table model
-var OrderQuery = orm.NewQuery(Order{})
+var OrderQuery = orm.NewQuery(&Order{})
 
 type Order struct {
     Id          int `json:"id"`

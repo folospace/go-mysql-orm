@@ -58,7 +58,7 @@ func (Family) DatabaseName() string {
 
 func TestMigrate(t *testing.T) {
     t.Run("create_struct", func(t *testing.T) {
-        FamilyTable := orm.NewQuery(Family{})
+        FamilyTable := orm.NewQuery(&Family{})
 
         err := orm.CreateStructFromTable(FamilyTable)
 

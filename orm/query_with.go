@@ -17,7 +17,7 @@ func (m Query[T]) WithParentsOnColumn(pidColumn interface{}) Query[T] {
 
     cte := NewQueryRaw(tempName, m.DBs()...)
 
-    appendQuery := NewQuery(*m.T, m.DBs()...)
+    appendQuery := NewQuery(m.T, m.DBs()...)
     appendQuery = appendQuery.Join(cte.T, func(query Query[T]) Query[T] {
         return query.Where(appendQuery.tables[0].tableStruct.Field(0).Addr().Interface(), Raw(tempName+"."+newcol))
     }).Select(appendQuery.AllCols())
@@ -45,7 +45,7 @@ func (m Query[T]) WithChildrenOnColumn(pidColumn interface{}) Query[T] {
 
     cte := NewQueryRaw(tempName, m.DBs()...)
 
-    appendQuery := NewQuery(*m.T, m.DBs()...)
+    appendQuery := NewQuery(m.T, m.DBs()...)
     appendQuery = appendQuery.Join(cte.T, func(query Query[T]) Query[T] {
         return query.Where(pcol, Raw(tempName+"."+newcol))
     }).Select(appendQuery.AllCols())

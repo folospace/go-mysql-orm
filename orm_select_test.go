@@ -9,7 +9,7 @@ import (
 
 var tdb, _ = orm.OpenMysql("rfamro@tcp(mysql-rfam-public.ebi.ac.uk:4497)/Rfam?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
 
-var FamilyTable2 = orm.NewQuery(Family2{})
+var FamilyTable2 = orm.NewQuery(&Family2{})
 
 type Family2 struct {
     RfamAcc            string    `json:"rfam_acc" orm:"rfam_acc,varchar(7),primary,unique"`

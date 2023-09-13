@@ -40,15 +40,15 @@ type Query[T Table] struct {
 }
 
 //query table[struct] generics
-func NewQuery[T Table](t T, writeAndReadDbs ...*sql.DB) Query[T] {
-    q := Query[T]{T: &t, writeAndReadDbs: writeAndReadDbs}
+func NewQuery[T Table](t *T, writeAndReadDbs ...*sql.DB) Query[T] {
+    q := Query[T]{T: t, writeAndReadDbs: writeAndReadDbs}
     q.curFileName = q.currentFilename()
     return q.FromTable(q.TableInterface())
 }
 
 //query raw, tablename can be empty
 func NewQueryRaw(tableName string, writeAndReadDbs ...*sql.DB) Query[SubQuery] {
-    sq := SubQuery{}
+    sq := &SubQuery{}
     if tableName != "" {
         sq.tableName = tableName
     }
@@ -57,7 +57,7 @@ func NewQueryRaw(tableName string, writeAndReadDbs ...*sql.DB) Query[SubQuery] {
 
 //query from subquery
 func NewQuerySub(subquery SubQuery) Query[SubQuery] {
-    return NewQuery(subquery, subquery.dbs...)
+    return NewQuery(&subquery, subquery.dbs...)
 }
 
 func (m Query[T]) TableInterface() Table {
