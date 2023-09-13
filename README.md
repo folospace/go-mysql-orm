@@ -2,9 +2,6 @@ Base on [go-sql-driver/mysql](https://github.com/go-sql-driver/mysql).
 
 ## Get Started
 ```go
- go get -u github.com/folospace/go-mysql-orm
-```
-```go
 import (
     "database/sql"
     "github.com/folospace/go-mysql-orm/orm"
