@@ -1,7 +1,7 @@
 package orm
 
-func (m *Query[T]) WithWindow(subquery SubQuery, windowName string) *Query[T] {
+func (q *Query[T]) WithWindow(subquery SubQuery, windowName string) *Query[T] {
     subquery.tableName = windowName
-    m.windows = append(m.windows, subquery)
-    return m
+    q.windows = append(q.windows, subquery)
+    return q
 }

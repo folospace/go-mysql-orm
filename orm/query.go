@@ -3,7 +3,6 @@ package orm
 import (
     "context"
     "database/sql"
-    "errors"
     "math/rand"
     "reflect"
     "runtime"
@@ -60,68 +59,68 @@ func NewQuerySub(subquery SubQuery) *Query[SubQuery] {
     return NewQuery(&subquery, subquery.dbs...)
 }
 
-func (m *Query[T]) TableInterface() Table {
-    return interface{}(m.T).(Table)
+func (q *Query[T]) TableInterface() Table {
+    return interface{}(q.T).(Table)
 }
 
-func (m *Query[T]) AllCols() string {
-    return m.tables[0].getAliasOrTableName() + ".*"
+func (q *Query[T]) AllCols() string {
+    return q.tables[0].getAliasOrTableName() + ".*"
 }
 
-func (m *Query[T]) UseDB(db ...*sql.DB) *Query[T] {
-    m.writeAndReadDbs = db
-    return m
+func (q *Query[T]) UseDB(db ...*sql.DB) *Query[T] {
+    q.writeAndReadDbs = db
+    return q
 }
 
-func (m *Query[T]) UseTx(tx *sql.Tx) *Query[T] {
-    m.tx = tx
-    return m
+func (q *Query[T]) UseTx(tx *sql.Tx) *Query[T] {
+    q.tx = tx
+    return q
 }
 
-func (m *Query[T]) DB() *sql.DB {
-    return m.writeDB()
+func (q *Query[T]) DB() *sql.DB {
+    return q.writeDB()
 }
 
-func (m *Query[T]) DBs() []*sql.DB {
-    if len(m.writeAndReadDbs) == 0 && len(m.tables) > 0 {
-        m.writeAndReadDbs = m.tables[0].table.Connection()
+func (q *Query[T]) DBs() []*sql.DB {
+    if len(q.writeAndReadDbs) == 0 && len(q.tables) > 0 {
+        q.writeAndReadDbs = q.tables[0].table.Connection()
     }
-    return m.writeAndReadDbs
+    return q.writeAndReadDbs
 }
-func (m *Query[T]) writeDB() *sql.DB {
-    dbs := m.DBs()
+func (q *Query[T]) writeDB() *sql.DB {
+    dbs := q.DBs()
     if len(dbs) > 0 {
         return dbs[0]
     }
     return nil
 }
-func (m *Query[T]) readDB() *sql.DB {
-    dbs := m.DBs()
+func (q *Query[T]) readDB() *sql.DB {
+    dbs := q.DBs()
     if len(dbs) > 1 {
         return dbs[rand.Intn(len(dbs)-1)+1] //rand get db
     } else {
-        return m.writeDB()
+        return q.writeDB()
     }
 }
-func (m *Query[T]) dbTx() *sql.Tx {
-    return m.tx
+func (q *Query[T]) dbTx() *sql.Tx {
+    return q.tx
 }
 
-func (m *Query[T]) FromTable(table Table, alias ...string) *Query[T] {
-    m.tables = nil
-    m.wheres = nil
-    m.orderbys = nil
-    m.columns = nil
-    m.prepareSql = ""
-    m.bindings = nil
-    m.groupBy = nil
-    m.having = nil
-    m.limit, m.offset = 0, 0
-    m.result = QueryResult{}
+func (q *Query[T]) FromTable(table Table, alias ...string) *Query[T] {
+    q.tables = nil
+    q.wheres = nil
+    q.orderbys = nil
+    q.columns = nil
+    q.prepareSql = ""
+    q.bindings = nil
+    q.groupBy = nil
+    q.having = nil
+    q.limit, q.offset = 0, 0
+    q.result = QueryResult{}
 
-    newTable, err := m.parseTable(table)
+    newTable, err := q.parseTable(table)
     if err != nil {
-        return m.setErr(err)
+        return q.setErr(err)
     }
 
     if len(alias) > 0 {
@@ -129,11 +128,11 @@ func (m *Query[T]) FromTable(table Table, alias ...string) *Query[T] {
     } else if newTable.rawSql != "" {
         newTable.alias = subqueryDefaultName
     }
-    m.tables = append(m.tables, newTable)
-    return m
+    q.tables = append(q.tables, newTable)
+    return q
 }
 
-func (m *Query[T]) parseTable(table Table) (*queryTable, error) {
+func (q *Query[T]) parseTable(table Table) (*queryTable, error) {
     var newTable *queryTable
 
     if temp, ok := table.(SubQuery); ok {
@@ -197,22 +196,22 @@ func (m *Query[T]) parseTable(table Table) (*queryTable, error) {
     return newTable, nil
 }
 
-func (m *Query[T]) Alias(alias string) *Query[T] {
-    m.tables[0].alias = alias
-    return m
+func (q *Query[T]) Alias(alias string) *Query[T] {
+    q.tables[0].alias = alias
+    return q
 }
 
-func (m *Query[T]) isRaw(v interface{}) (string, bool) {
+func (q *Query[T]) isRaw(v interface{}) (string, bool) {
     val, ok := v.(Raw)
     return string(val), ok
 }
 
-func (m *Query[T]) isOperator(v interface{}) (string, bool) {
+func (q *Query[T]) isOperator(v interface{}) (string, bool) {
     val, ok := v.(WhereOperator)
     return string(val), ok
 }
 
-func (m *Query[T]) isStringOrRaw(v interface{}) (string, bool) {
+func (q *Query[T]) isStringOrRaw(v interface{}) (string, bool) {
     val := reflect.ValueOf(v)
 
     if val.Kind() == reflect.String {
@@ -222,12 +221,12 @@ func (m *Query[T]) isStringOrRaw(v interface{}) (string, bool) {
     }
 }
 
-func (m *Query[T]) parseColumn(v interface{}) (string, error) {
+func (q *Query[T]) parseColumn(v interface{}) (string, error) {
     columnVar := reflect.ValueOf(v)
     if columnVar.Kind() == reflect.String {
         ret := columnVar.String()
-        if ret == "*" && len(m.tables) > 0 {
-            prefix := m.tables[0].getAliasOrTableName()
+        if ret == "*" && len(q.tables) > 0 {
+            prefix := q.tables[0].getAliasOrTableName()
             if prefix != "" {
                 prefix += "."
             }
@@ -238,25 +237,29 @@ func (m *Query[T]) parseColumn(v interface{}) (string, error) {
             return ret, nil
         }
     } else if columnVar.Kind() == reflect.Ptr && columnVar.Elem().CanAddr() {
-        table, column := m.getTableColumn(columnVar)
+        table, column := q.getTableColumn(columnVar)
         if table == nil {
             return "", ErrColumnNotExisted
-        }
-        if column == "" {
-            return "", errors.New("column is not exist in table " + table.table.TableName())
         }
         prefix := table.getAliasOrTableName()
         if prefix != "" {
             prefix += "."
         }
+        if column == "" {
+            return prefix + "*", nil
+        }
+
         return prefix + "`" + column + "`", nil
     } else {
         return "", ErrColumnShouldBeStringOrPtr
     }
 }
 
-func (m *Query[T]) getTableColumn(i reflect.Value) (*queryTable, string) {
-    for _, t := range m.tables {
+func (q *Query[T]) getTableColumn(i reflect.Value) (*queryTable, string) {
+    for _, t := range q.tables {
+        if i.Interface() == t.table {
+            return t, ""
+        }
         if s, exist := t.ormFields[i.Elem().Addr().Interface()]; exist {
             return t, s
         }
@@ -264,33 +267,33 @@ func (m *Query[T]) getTableColumn(i reflect.Value) (*queryTable, string) {
     return nil, ""
 }
 
-func (m *Query[T]) setErr(err error) *Query[T] {
+func (q *Query[T]) setErr(err error) *Query[T] {
     if err != nil {
-        m.result.Err = err
+        q.result.Err = err
     }
-    return m
+    return q
 }
 
-func (m *Query[T]) Limit(limit int) *Query[T] {
-    m.limit = limit
-    return m
+func (q *Query[T]) Limit(limit int) *Query[T] {
+    q.limit = limit
+    return q
 }
 
-func (m *Query[T]) Offset(offset int) *Query[T] {
-    m.offset = offset
-    return m
+func (q *Query[T]) Offset(offset int) *Query[T] {
+    q.offset = offset
+    return q
 }
 
 //should not use group by after order by
-func (m *Query[T]) GroupBy(columns ...interface{}) *Query[T] {
-    m.groupBy = append(m.groupBy, columns...)
-    return m
+func (q *Query[T]) GroupBy(columns ...interface{}) *Query[T] {
+    q.groupBy = append(q.groupBy, columns...)
+    return q
 }
 
-func (m *Query[T]) Having(column interface{}, vals ...interface{}) *Query[T] {
-    oldWheres := m.wheres
+func (q *Query[T]) Having(column interface{}, vals ...interface{}) *Query[T] {
+    oldWheres := q.wheres
 
-    newQuery := m.where(false, column, vals...)
+    newQuery := q.where(false, column, vals...)
 
     newWheres := newQuery.wheres[len(oldWheres):]
     if len(newWheres) > 0 {
@@ -300,10 +303,10 @@ func (m *Query[T]) Having(column interface{}, vals ...interface{}) *Query[T] {
     return newQuery
 }
 
-func (m *Query[T]) orHaving(column interface{}, vals ...interface{}) *Query[T] {
-    oldWheres := m.wheres
+func (q *Query[T]) orHaving(column interface{}, vals ...interface{}) *Query[T] {
+    oldWheres := q.wheres
 
-    newQuery := m.where(true, column, vals...)
+    newQuery := q.where(true, column, vals...)
 
     newWheres := newQuery.wheres[len(oldWheres):]
     if len(newWheres) > 0 {
@@ -313,50 +316,50 @@ func (m *Query[T]) orHaving(column interface{}, vals ...interface{}) *Query[T] {
     return newQuery
 }
 
-func (m *Query[T]) PartitionBy(column interface{}) *Query[T] {
-    val, err := m.parseColumn(column)
+func (q *Query[T]) PartitionBy(column interface{}) *Query[T] {
+    val, err := q.parseColumn(column)
     if err != nil {
-        return m.setErr(err)
+        return q.setErr(err)
     }
-    m.partitionbys = append(m.partitionbys, val)
-    return m
+    q.partitionbys = append(q.partitionbys, val)
+    return q
 }
-func (m *Query[T]) OrderBy(column interface{}) *Query[T] {
-    val, err := m.parseColumn(column)
+func (q *Query[T]) OrderBy(column interface{}) *Query[T] {
+    val, err := q.parseColumn(column)
     if err != nil {
-        return m.setErr(err)
+        return q.setErr(err)
     }
-    m.orderbys = append(m.orderbys, val)
-    return m
+    q.orderbys = append(q.orderbys, val)
+    return q
 }
-func (m *Query[T]) OrderByDesc(column interface{}) *Query[T] {
-    val, err := m.parseColumn(column)
+func (q *Query[T]) OrderByDesc(column interface{}) *Query[T] {
+    val, err := q.parseColumn(column)
     if err != nil {
-        return m.setErr(err)
+        return q.setErr(err)
     }
-    m.orderbys = append(m.orderbys, val+" desc")
-    return m
+    q.orderbys = append(q.orderbys, val+" desc")
+    return q
 }
 
-func (m *Query[T]) getOrderAndLimitSqlStr() string {
+func (q *Query[T]) getOrderAndLimitSqlStr() string {
     var ret []string
-    if len(m.orderbys) > 0 {
-        orderStr := "order by " + strings.Join(m.orderbys, ",")
+    if len(q.orderbys) > 0 {
+        orderStr := "order by " + strings.Join(q.orderbys, ",")
         ret = append(ret, orderStr)
     }
-    if m.limit > 0 {
-        limitStr := "limit " + strconv.Itoa(m.limit)
+    if q.limit > 0 {
+        limitStr := "limit " + strconv.Itoa(q.limit)
         ret = append(ret, limitStr)
     }
-    if m.offset > 0 {
-        offsetStr := "offset " + strconv.Itoa(m.offset)
+    if q.offset > 0 {
+        offsetStr := "offset " + strconv.Itoa(q.offset)
         ret = append(ret, offsetStr)
     }
 
     return strings.Join(ret, " ")
 }
 
-func (m *Query[T]) currentFilename() string {
+func (q *Query[T]) currentFilename() string {
     _, fs, _, _ := runtime.Caller(2)
     return fs
 }

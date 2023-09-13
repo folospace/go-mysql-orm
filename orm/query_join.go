@@ -13,23 +13,23 @@ const (
     JoinTypeOuter JoinType = "outer join"
 )
 
-func (m *Query[T]) Join(table Table, where func(join *Query[T]) *Query[T], alias ...string) *Query[T] {
-    return m.join(JoinTypeInner, table, where, alias...)
+func (q *Query[T]) Join(table Table, where func(join *Query[T]) *Query[T], alias ...string) *Query[T] {
+    return q.join(JoinTypeInner, table, where, alias...)
 }
-func (m *Query[T]) LeftJoin(table Table, where func(join *Query[T]) *Query[T], alias ...string) *Query[T] {
-    return m.join(JoinTypeLeft, table, where, alias...)
+func (q *Query[T]) LeftJoin(table Table, where func(join *Query[T]) *Query[T], alias ...string) *Query[T] {
+    return q.join(JoinTypeLeft, table, where, alias...)
 }
-func (m *Query[T]) RightJoin(table Table, where func(join *Query[T]) *Query[T], alias ...string) *Query[T] {
-    return m.join(JoinTypeRight, table, where, alias...)
+func (q *Query[T]) RightJoin(table Table, where func(join *Query[T]) *Query[T], alias ...string) *Query[T] {
+    return q.join(JoinTypeRight, table, where, alias...)
 }
-func (m *Query[T]) OuterJoin(table Table, where func(join *Query[T]) *Query[T], alias ...string) *Query[T] {
-    return m.join(JoinTypeOuter, table, where, alias...)
+func (q *Query[T]) OuterJoin(table Table, where func(join *Query[T]) *Query[T], alias ...string) *Query[T] {
+    return q.join(JoinTypeOuter, table, where, alias...)
 }
 
-func (m *Query[T]) join(joinType JoinType, table Table, wheref func(*Query[T]) *Query[T], alias ...string) *Query[T] {
-    newTable, err := m.parseTable(table)
+func (q *Query[T]) join(joinType JoinType, table Table, wheref func(*Query[T]) *Query[T], alias ...string) *Query[T] {
+    newTable, err := q.parseTable(table)
     if err != nil {
-        return m.setErr(err)
+        return q.setErr(err)
     }
 
     if len(alias) > 0 {
@@ -39,12 +39,12 @@ func (m *Query[T]) join(joinType JoinType, table Table, wheref func(*Query[T]) *
     }
 
     newTable.joinType = joinType
-    m.tables = append(m.tables, newTable)
-    m.tables[len(m.tables)-1].joinCondition, err = m.generateWhereGroup(wheref)
-    return m.setErr(err)
+    q.tables = append(q.tables, newTable)
+    q.tables[len(q.tables)-1].joinCondition, err = q.generateWhereGroup(wheref)
+    return q.setErr(err)
 }
 
-func (m *Query[T]) generateTableAndJoinStr(tables []*queryTable, bindings *[]interface{}) string {
+func (q *Query[T]) generateTableAndJoinStr(tables []*queryTable, bindings *[]interface{}) string {
     if len(tables) == 0 {
         return ""
     }
@@ -58,7 +58,7 @@ func (m *Query[T]) generateTableAndJoinStr(tables []*queryTable, bindings *[]int
                 tempStr = string(v.joinType)
                 tempStr += " " + v.getTableNameAndAlias()
                 if len(v.joinCondition.SubWheres) > 0 {
-                    whereStr := m.generateWhereStr(v.joinCondition.SubWheres, bindings)
+                    whereStr := q.generateWhereStr(v.joinCondition.SubWheres, bindings)
                     tempStr += " on " + whereStr
                 }
             }
@@ -77,7 +77,7 @@ func (m *Query[T]) generateTableAndJoinStr(tables []*queryTable, bindings *[]int
                 }
                 *bindings = append(*bindings, v.bindings...)
                 if len(v.joinCondition.SubWheres) > 0 {
-                    whereStr := m.generateWhereStr(v.joinCondition.SubWheres, bindings)
+                    whereStr := q.generateWhereStr(v.joinCondition.SubWheres, bindings)
                     tempStr += " on " + whereStr
                 }
             }

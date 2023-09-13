@@ -25,32 +25,32 @@ const (
     WhereIsNotNull      WhereOperator = "is not null"
 )
 
-func (m *Query[T]) where(isOr bool, column interface{}, vals ...interface{}) *Query[T] {
+func (q *Query[T]) where(isOr bool, column interface{}, vals ...interface{}) *Query[T] {
     if len(vals) > 2 {
-        return m.setErr(errors.New("two many where-params"))
+        return q.setErr(errors.New("two many where-params"))
     }
 
     if len(vals) == 0 {
-        c, ok := m.isStringOrRaw(column)
+        c, ok := q.isStringOrRaw(column)
         if ok == false {
-            return m.setErr(errors.New("where-param should be string while only 1 param exist"))
+            return q.setErr(errors.New("where-param should be string while only 1 param exist"))
         }
         if c != "" {
-            m.wheres = append(m.wheres, where{Raw: c, IsOr: isOr})
+            q.wheres = append(q.wheres, where{Raw: c, IsOr: isOr})
         } else {
-            return m.setErr(errors.New("where-param should not be empty string"))
+            return q.setErr(errors.New("where-param should not be empty string"))
         }
     } else {
-        c, err := m.parseColumn(column)
+        c, err := q.parseColumn(column)
         if err != nil {
-            return m.setErr(err)
+            return q.setErr(err)
         }
         operator := "="
         var val interface{}
         if len(vals) == 2 {
-            operator2, ok := m.isStringOrRaw(vals[0])
+            operator2, ok := q.isStringOrRaw(vals[0])
             if ok == false {
-                return m.setErr(errors.New("the second where-param should be operator as string"))
+                return q.setErr(errors.New("the second where-param should be operator as string"))
             }
             operator = operator2
             val = vals[1]
@@ -58,10 +58,10 @@ func (m *Query[T]) where(isOr bool, column interface{}, vals ...interface{}) *Qu
             if vals[0] == nil {
                 vals[0] = WhereIsNull
             }
-            tempVal, ok := m.isOperator(vals[0])
+            tempVal, ok := q.isOperator(vals[0])
             if ok {
                 if tempVal != string(WhereIsNull) && tempVal != string(WhereIsNotNull) {
-                    return m.setErr(errors.New("operator \"" + tempVal + "\" must have params"))
+                    return q.setErr(errors.New("operator \"" + tempVal + "\" must have params"))
                 }
                 operator = ""
                 val = Raw(tempVal)
@@ -70,7 +70,7 @@ func (m *Query[T]) where(isOr bool, column interface{}, vals ...interface{}) *Qu
             }
         }
 
-        value, ok := m.isRaw(val)
+        value, ok := q.isRaw(val)
         raw := ""
         var rawBindings []interface{}
         if ok {
@@ -99,21 +99,21 @@ func (m *Query[T]) where(isOr bool, column interface{}, vals ...interface{}) *Qu
 
                     raw = c + " " + operator + " " + "(" + strings.Join(rawCells, ",") + ")"
                 } else if temp.Kind() == reflect.Ptr {
-                    rawColumn, err := m.parseColumn(val)
+                    rawColumn, err := q.parseColumn(val)
                     if err == nil {
                         raw = c + " " + operator + " " + rawColumn
                     } else {
-                        return m.setErr(errors.New("Error where " + c + " " + operator + " ? val is invalid"))
+                        return q.setErr(errors.New("Error where " + c + " " + operator + " ? val is invalid"))
                     }
                 }
             }
         }
-        m.wheres = append(m.wheres, where{Raw: raw, Column: c, Val: val, Operator: operator, IsOr: isOr, RawBindings: rawBindings})
+        q.wheres = append(q.wheres, where{Raw: raw, Column: c, Val: val, Operator: operator, IsOr: isOr, RawBindings: rawBindings})
     }
-    return m
+    return q
 }
 
-func (m *Query[T]) generateWhereStr(wheres []where, bindings *[]interface{}) string {
+func (q *Query[T]) generateWhereStr(wheres []where, bindings *[]interface{}) string {
     var whereStr []string
     for k, v := range wheres {
         tempStr := ""
@@ -135,7 +135,7 @@ func (m *Query[T]) generateWhereStr(wheres []where, bindings *[]interface{}) str
                 *bindings = append(*bindings, v.Val)
             }
         } else {
-            tempStr += "(" + m.generateWhereStr(v.SubWheres, bindings) + ")"
+            tempStr += "(" + q.generateWhereStr(v.SubWheres, bindings) + ")"
         }
         whereStr = append(whereStr, tempStr)
     }
@@ -145,27 +145,27 @@ func (m *Query[T]) generateWhereStr(wheres []where, bindings *[]interface{}) str
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m *Query[T]) Where(column interface{}, vals ...interface{}) *Query[T] {
-    t := m.where(false, column, vals...)
+func (q *Query[T]) Where(column interface{}, vals ...interface{}) *Query[T] {
+    t := q.where(false, column, vals...)
     return t
 }
 
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m *Query[T]) OrWhere(column interface{}, vals ...interface{}) *Query[T] {
-    return m.where(true, column, vals...)
+func (q *Query[T]) OrWhere(column interface{}, vals ...interface{}) *Query[T] {
+    return q.where(true, column, vals...)
 }
 
 //short for Where(primaryKey, vals...)
-func (m *Query[T]) WherePrimary(operator interface{}, vals ...interface{}) *Query[T] {
+func (q *Query[T]) WherePrimary(operator interface{}, vals ...interface{}) *Query[T] {
     //operator as vals
     if len(vals) == 0 {
         vals = []interface{}{operator}
         reflectVar := reflect.ValueOf(operator)
         if reflectVar.Kind() == reflect.Slice {
             if reflectVar.Len() == 0 {
-                return m
+                return q
             }
             operator = WhereIn
         } else {
@@ -173,17 +173,17 @@ func (m *Query[T]) WherePrimary(operator interface{}, vals ...interface{}) *Quer
         }
     }
 
-    return m.where(false, m.tables[0].tableStruct.Field(0).Addr().Interface(), operator, vals[0])
+    return q.where(false, q.tables[0].tableStruct.Field(0).Addr().Interface(), operator, vals[0])
 }
 
 //short for OrWhere(primaryKey, vals...)
-func (m *Query[T]) OrWherePrimary(operator interface{}, vals ...interface{}) *Query[T] {
+func (q *Query[T]) OrWherePrimary(operator interface{}, vals ...interface{}) *Query[T] {
     //operator as vals
     if len(vals) == 0 {
         reflectVar := reflect.ValueOf(operator)
         if reflectVar.Kind() == reflect.Slice {
             if reflectVar.Len() == 0 {
-                return m
+                return q
             }
             operator = WhereIn
         } else {
@@ -191,42 +191,41 @@ func (m *Query[T]) OrWherePrimary(operator interface{}, vals ...interface{}) *Qu
         }
     }
 
-    return m.where(true, m.tables[0].tableStruct.Field(0).Addr().Interface(), operator, vals[0])
+    return q.where(true, q.tables[0].tableStruct.Field(0).Addr().Interface(), operator, vals[0])
 }
 
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m *Query[T]) WhereFunc(f func(*Query[T]) *Query[T]) *Query[T] {
-    return m.whereGroup(false, f)
+func (q *Query[T]) WhereFunc(f func(*Query[T]) *Query[T]) *Query[T] {
+    return q.whereGroup(false, f)
 }
 
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m *Query[T]) OrWhereFunc(f func(*Query[T]) *Query[T]) *Query[T] {
-    return m.whereGroup(true, f)
+func (q *Query[T]) OrWhereFunc(f func(*Query[T]) *Query[T]) *Query[T] {
+    return q.whereGroup(true, f)
 }
 
-func (m *Query[T]) whereGroup(isOr bool, f func(*Query[T]) *Query[T]) *Query[T] {
-    temp, err := m.generateWhereGroup(f)
-    m.setErr(err)
+func (q *Query[T]) whereGroup(isOr bool, f func(*Query[T]) *Query[T]) *Query[T] {
+    temp, err := q.generateWhereGroup(f)
+    q.setErr(err)
     if len(temp.SubWheres) > 0 {
         temp.IsOr = isOr
-        m.wheres = append(m.wheres, temp)
+        q.wheres = append(q.wheres, temp)
     }
-    return m
+    return q
 }
 
-func (m *Query[T]) generateWhereGroup(f func(*Query[T]) *Query[T]) (where, error) {
-    start := len(m.wheres)
-    nq := f(m)
+func (q *Query[T]) generateWhereGroup(f func(*Query[T]) *Query[T]) (where, error) {
+    start := len(q.wheres)
+    nq := *q
+    f(&nq)
     newWheres := nq.wheres[start:]
 
     if len(newWheres) > 0 {
-        subwheres := make([]where, 0)
-        m.wheres = m.wheres[:start]
-        return where{SubWheres: append(subwheres, newWheres...)}, nq.result.Err
+        return where{SubWheres: append([]where{}, newWheres...)}, nq.result.Err
     }
     return where{}, nq.result.Err
 }

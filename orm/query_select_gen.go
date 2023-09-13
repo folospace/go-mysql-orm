@@ -4,12 +4,12 @@ import (
     "strings"
 )
 
-func (m *Query[T]) SubQuery() SubQuery {
-    if m.self != nil {
-        cte := m.self
-        m.self = nil
+func (q *Query[T]) SubQuery() SubQuery {
+    if q.self != nil {
+        cte := q.self
+        q.self = nil
 
-        mt := cte.WithRecursiveCte(m.SubQuery(), cte.T.TableName())
+        mt := cte.WithRecursiveCte(q.SubQuery(), cte.T.TableName())
         tempTable := mt.generateSelectQuery(mt.columns...)
 
         tempTable.dbs = mt.DBs()
@@ -21,7 +21,7 @@ func (m *Query[T]) SubQuery() SubQuery {
 
         return tempTable
     } else {
-        mt := m
+        mt := q
         tempTable := mt.generateSelectQuery(mt.columns...)
 
         tempTable.dbs = mt.DBs()
@@ -35,18 +35,18 @@ func (m *Query[T]) SubQuery() SubQuery {
     }
 }
 
-func (m *Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
+func (q *Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
     var ret SubQuery
-    if m.prepareSql != "" {
-        ret.raw = m.prepareSql
-        ret.bindings = m.bindings
+    if q.prepareSql != "" {
+        ret.raw = q.prepareSql
+        ret.bindings = q.bindings
     } else {
         var rawSql string
         bindings := make([]interface{}, 0)
 
-        if len(m.withCtes) > 0 {
+        if len(q.withCtes) > 0 {
             var raws []string
-            for _, v := range m.withCtes {
+            for _, v := range q.withCtes {
                 var raw string
                 if v.recursive {
                     raw += "recursive "
@@ -64,32 +64,32 @@ func (m *Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
             rawSql += "with " + strings.Join(raws, ",\n") + "\n"
         }
 
-        selectStr, err := m.generateSelectColumns(columns...)
+        selectStr, err := q.generateSelectColumns(columns...)
         if err != nil {
             ret.err = err
         }
 
-        tableStr := m.generateTableAndJoinStr(m.tables, &bindings)
+        tableStr := q.generateTableAndJoinStr(q.tables, &bindings)
 
-        whereStr := m.generateWhereStr(m.wheres, &bindings)
+        whereStr := q.generateWhereStr(q.wheres, &bindings)
 
         var groupBy string
-        if len(m.groupBy) > 0 {
-            groupBy, err = m.generateSelectColumns(m.groupBy...)
+        if len(q.groupBy) > 0 {
+            groupBy, err = q.generateSelectColumns(q.groupBy...)
             if err != nil {
                 ret.err = err
             }
         }
         var having string
-        if len(m.having) > 0 {
-            having = m.generateWhereStr(m.having, &bindings)
+        if len(q.having) > 0 {
+            having = q.generateWhereStr(q.having, &bindings)
         }
 
-        orderLimitOffsetStr := m.getOrderAndLimitSqlStr()
+        orderLimitOffsetStr := q.getOrderAndLimitSqlStr()
 
         var selectKeyword = "select"
-        if m.selectTimeout != "" {
-            selectKeyword += " " + m.selectTimeout
+        if q.selectTimeout != "" {
+            selectKeyword += " " + q.selectTimeout
         }
 
         rawSql += selectKeyword + " " + selectStr
@@ -112,12 +112,12 @@ func (m *Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
             rawSql += " " + orderLimitOffsetStr
         }
 
-        if m.forUpdate != "" {
-            rawSql += " " + string(m.forUpdate)
+        if q.forUpdate != "" {
+            rawSql += " " + string(q.forUpdate)
         }
 
-        if len(m.unions) > 0 {
-            for _, v := range m.unions {
+        if len(q.unions) > 0 {
+            for _, v := range q.unions {
                 prefix := "\nunion"
                 if v.unionAll {
                     prefix += " all"
@@ -128,9 +128,9 @@ func (m *Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
             }
         }
 
-        if len(m.windows) > 0 {
+        if len(q.windows) > 0 {
             var raws []string
-            for _, v := range m.windows {
+            for _, v := range q.windows {
                 var raw = v.tableName + " as (" + v.raw + ")"
                 raws = append(raws, raw)
             }
@@ -143,10 +143,10 @@ func (m *Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
     return ret
 }
 
-func (m *Query[T]) generateSelectColumns(columns ...interface{}) (string, error) {
+func (q *Query[T]) generateSelectColumns(columns ...interface{}) (string, error) {
     var outColumns []string
     for _, v := range columns {
-        column, err := m.parseColumn(v)
+        column, err := q.parseColumn(v)
 
         if err != nil {
             return "", err

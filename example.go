@@ -49,13 +49,6 @@ func (Order) DatabaseName() string {
 }
 
 func main() {
-    {
-        //create db table from go struct
-        _, _ = orm.CreateTableFromStruct(UserQuery)
-        //create go struct from db table
-        _ = orm.CreateStructFromTable(UserQuery)
-    }
-
     //query select
     {
         //get first user (name='join') as struct
@@ -106,7 +99,7 @@ func main() {
 
     //query join
     {
-        UserQuery.Join(OrderQuery.T, func(query orm.Query[User]) orm.Query[User] {
+        UserQuery.Join(OrderQuery.T, func(query *orm.Query[User]) *orm.Query[User] {
             return query.Where(&UserQuery.T.Id, &OrderQuery.T.UserId)
         }).Where(&OrderQuery.T.OrderAmount, 100).
             Select(UserQuery.AllCols()).Gets()
@@ -131,7 +124,7 @@ func main() {
         UserQuery.InsertSubquery(subquery, nil)
 
         //join subquery
-        UserQuery.Join(subquery, func(query orm.Query[User]) orm.Query[User] {
+        UserQuery.Join(subquery, func(query *orm.Query[User]) *orm.Query[User] {
             return query.Where(&UserQuery.T.Id, orm.Raw("sub.id"))
         }).Gets()
     }

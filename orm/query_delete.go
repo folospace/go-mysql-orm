@@ -1,29 +1,29 @@
 package orm
 
-func (m *Query[T]) Delete(primaryIds ...interface{}) QueryResult {
-    if len(m.tables) == 0 {
-        m.setErr(ErrTableNotSelected)
-        return m.result
+func (q *Query[T]) Delete(primaryIds ...interface{}) QueryResult {
+    if len(q.tables) == 0 {
+        q.setErr(ErrTableNotSelected)
+        return q.result
     }
     if len(primaryIds) > 0 {
-        return m.WherePrimary(primaryIds).delete()
+        return q.WherePrimary(primaryIds).delete()
     } else {
-        return m.delete()
+        return q.delete()
     }
 }
 
-func (m *Query[T]) delete() QueryResult {
+func (q *Query[T]) delete() QueryResult {
     bindings := make([]interface{}, 0)
 
-    tableStr := m.generateTableAndJoinStr(m.tables, &bindings)
+    tableStr := q.generateTableAndJoinStr(q.tables, &bindings)
 
-    whereStr := m.generateWhereStr(m.wheres, &bindings)
+    whereStr := q.generateWhereStr(q.wheres, &bindings)
 
-    orderLimitOffsetStr := m.getOrderAndLimitSqlStr()
+    orderLimitOffsetStr := q.getOrderAndLimitSqlStr()
 
     rawSql := "delete"
     if orderLimitOffsetStr == "" {
-        rawSql += " " + m.tables[0].getTableName()
+        rawSql += " " + q.tables[0].getTableName()
     }
     rawSql += " from " + tableStr
 
@@ -34,8 +34,8 @@ func (m *Query[T]) delete() QueryResult {
         rawSql += " " + orderLimitOffsetStr
     }
 
-    m.prepareSql = rawSql
-    m.bindings = bindings
+    q.prepareSql = rawSql
+    q.bindings = bindings
 
-    return m.Execute()
+    return q.Execute()
 }

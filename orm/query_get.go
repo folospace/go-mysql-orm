@@ -7,54 +7,54 @@ import (
 )
 
 //get first T
-func (m *Query[T]) Get(primaryIds ...interface{}) (T, QueryResult) {
+func (q *Query[T]) Get(primaryIds ...interface{}) (T, QueryResult) {
     var ret T
-    res := m.WherePrimary(primaryIds).Limit(1).GetTo(&ret)
+    res := q.WherePrimary(primaryIds).Limit(1).GetTo(&ret)
     return ret, res
 }
 
 //get slice T
-func (m *Query[T]) Gets(primaryIds ...interface{}) ([]T, QueryResult) {
+func (q *Query[T]) Gets(primaryIds ...interface{}) ([]T, QueryResult) {
     var ret []T
-    res := m.WherePrimary(primaryIds).GetTo(&ret)
+    res := q.WherePrimary(primaryIds).GetTo(&ret)
     return ret, res
 }
 
 //get first row
-func (m *Query[T]) GetRow() (map[string]interface{}, QueryResult) {
+func (q *Query[T]) GetRow() (map[string]interface{}, QueryResult) {
     var ret map[string]interface{}
-    res := m.Limit(1).GetTo(&ret)
+    res := q.Limit(1).GetTo(&ret)
     return ret, res
 }
 
 //get slice row
-func (m *Query[T]) GetRows() ([]map[string]interface{}, QueryResult) {
+func (q *Query[T]) GetRows() ([]map[string]interface{}, QueryResult) {
     var ret []map[string]interface{}
-    res := m.GetTo(&ret)
+    res := q.GetTo(&ret)
     return ret, res
 }
 
 //get count T
-func (m *Query[T]) GetCount() (int64, QueryResult) {
+func (q *Query[T]) GetCount() (int64, QueryResult) {
     var ret int64
-    if len(m.groupBy) == 0 {
-        if len(m.columns) == 0 {
-            res := m.Select("count(*)").GetTo(&ret)
+    if len(q.groupBy) == 0 {
+        if len(q.columns) == 0 {
+            res := q.Select("count(*)").GetTo(&ret)
             return ret, res
         } else {
-            c, err := m.parseColumn(m.columns[0])
-            m.columns = nil
+            c, err := q.parseColumn(q.columns[0])
+            q.columns = nil
             if err == nil {
                 cl := strings.ToLower(c)
                 if strings.HasPrefix(cl, "count(") == false || strings.Contains(cl, ")") == false {
                     c = "count(" + c + ")"
                 }
             }
-            res := m.setErr(err).Select(c).GetTo(&ret)
+            res := q.setErr(err).Select(c).GetTo(&ret)
             return ret, res
         }
     } else {
-        tempTable := m.SubQuery()
+        tempTable := q.SubQuery()
 
         newQuery := NewQuery(&tempTable, tempTable.dbs...)
 
@@ -69,32 +69,32 @@ func (m *Query[T]) GetCount() (int64, QueryResult) {
 //destPtr: *map [int | string | ...] int | string ...
 //destPtr: *map [int | string | ...] struct
 //destPtr: *map [int | string | ...] []struct
-func (m *Query[T]) GetTo(destPtr interface{}) QueryResult {
-    tempTable := m.SubQuery()
+func (q *Query[T]) GetTo(destPtr interface{}) QueryResult {
+    tempTable := q.SubQuery()
 
-    m.result.PrepareSql = tempTable.raw
-    m.result.Bindings = tempTable.bindings
+    q.result.PrepareSql = tempTable.raw
+    q.result.Bindings = tempTable.bindings
     if tempTable.err != nil {
-        m.result.Err = tempTable.err
+        q.result.Err = tempTable.err
     }
 
-    if m.result.Err != nil {
-        return m.result
+    if q.result.Err != nil {
+        return q.result
     }
 
     var rows *sql.Rows
     var err error
-    if m.dbTx() != nil {
-        if m.ctx != nil {
-            rows, err = m.dbTx().QueryContext(*m.ctx, tempTable.raw, tempTable.bindings...)
+    if q.dbTx() != nil {
+        if q.ctx != nil {
+            rows, err = q.dbTx().QueryContext(*q.ctx, tempTable.raw, tempTable.bindings...)
         } else {
-            rows, err = m.dbTx().Query(tempTable.raw, tempTable.bindings...)
+            rows, err = q.dbTx().Query(tempTable.raw, tempTable.bindings...)
         }
     } else {
-        if m.ctx != nil {
-            rows, err = m.readDB().QueryContext(*m.ctx, tempTable.raw, tempTable.bindings...)
+        if q.ctx != nil {
+            rows, err = q.readDB().QueryContext(*q.ctx, tempTable.raw, tempTable.bindings...)
         } else {
-            rows, err = m.readDB().Query(tempTable.raw, tempTable.bindings...)
+            rows, err = q.readDB().Query(tempTable.raw, tempTable.bindings...)
         }
     }
 
@@ -105,15 +105,15 @@ func (m *Query[T]) GetTo(destPtr interface{}) QueryResult {
     }()
 
     if err != nil {
-        m.result.Err = err
-        return m.result
+        q.result.Err = err
+        return q.result
     }
 
-    m.result.Err = m.scanRows(destPtr, rows)
-    return m.result
+    q.result.Err = q.scanRows(destPtr, rows)
+    return q.result
 }
 
-func (m *Query[T]) scanValues(basePtrs []interface{}, rowColumns []string, rows *sql.Rows, setVal func(), tryOnce bool) error {
+func (q *Query[T]) scanValues(basePtrs []interface{}, rowColumns []string, rows *sql.Rows, setVal func(), tryOnce bool) error {
     var err error
     var tempPtrs = make([]interface{}, len(rowColumns))
     for k := range rowColumns {
@@ -153,7 +153,7 @@ func (m *Query[T]) scanValues(basePtrs []interface{}, rowColumns []string, rows 
     return err
 }
 
-func (m *Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
+func (q *Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
     rowColumns, gerr := rows.Columns()
     if gerr != nil {
         return gerr
@@ -192,7 +192,7 @@ func (m *Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
                     basePtrs[k] = &temp
                 }
             }
-            gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
+            gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
                 newVal.SetMapIndex(reflect.ValueOf(basePtrs[0]).Elem(), reflect.ValueOf(structAddr).Elem())
             }, false)
             base.Elem().Set(newVal)
@@ -215,7 +215,7 @@ func (m *Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
                     }
                 }
                 basePtrs[0] = keyAddr
-                gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
+                gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
                     index := reflect.ValueOf(basePtrs[0]).Elem()
                     tempSlice := newVal.MapIndex(index)
                     if tempSlice.IsValid() == false {
@@ -232,7 +232,7 @@ func (m *Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
                 basePtrs[0] = keyAddr
                 basePtrs[1] = valAddr
 
-                gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
+                gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
                     index := reflect.ValueOf(basePtrs[0]).Elem()
                     tempSlice := newVal.MapIndex(index)
                     if tempSlice.IsValid() == false {
@@ -252,7 +252,7 @@ func (m *Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
                     basePtrs[k] = &temp
                 }
 
-                gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
+                gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
                     for k, v := range rowColumns {
                         newVal.SetMapIndex(reflect.ValueOf(v), reflect.ValueOf(basePtrs[k]).Elem())
                     }
@@ -280,7 +280,7 @@ func (m *Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
                     basePtrs[k] = &temp
                 }
             }
-            gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
+            gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
                 newVal.SetMapIndex(reflect.ValueOf(keyAddr).Elem(), reflect.ValueOf(tempAddr).Elem())
             }, false)
 
@@ -301,7 +301,7 @@ func (m *Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
                 basePtrs[k] = &temp
             }
         }
-        gerr = m.scanValues(basePtrs, rowColumns, rows, nil, true)
+        gerr = q.scanValues(basePtrs, rowColumns, rows, nil, true)
     case reflect.Slice:
         ele := reflect.TypeOf(dest).Elem().Elem()
         if ele.Kind() == reflect.Ptr {
@@ -325,7 +325,7 @@ func (m *Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
                 }
             }
 
-            gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
+            gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
                 val = reflect.Append(val, reflect.ValueOf(structAddr).Elem())
             }, false)
 
@@ -339,7 +339,7 @@ func (m *Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
                 //var temp interface{}
                 basePtrs[k] = reflect.New(valEle).Interface()
             }
-            gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
+            gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
                 newVal := reflect.MakeMap(ele)
                 for k, v := range rowColumns {
                     newVal.SetMapIndex(reflect.ValueOf(v), reflect.ValueOf(basePtrs[k]).Elem())
@@ -362,7 +362,7 @@ func (m *Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
                 }
             }
 
-            gerr = m.scanValues(basePtrs, rowColumns, rows, func() {
+            gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
                 val = reflect.Append(val, reflect.ValueOf(tempAddr).Elem())
             }, false)
 
@@ -378,7 +378,7 @@ func (m *Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
                 basePtrs[k] = &temp
             }
         }
-        gerr = m.scanValues(basePtrs, rowColumns, rows, nil, true)
+        gerr = q.scanValues(basePtrs, rowColumns, rows, nil, true)
     }
     return gerr
 }

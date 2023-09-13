@@ -7,25 +7,25 @@ import (
 )
 
 //tableFieldPtrs: allow insert table columns
-func (m *Query[T]) Insert(data T, tableFieldPtrs ...interface{}) QueryResult {
-    return m.insert(false, []T{data}, tableFieldPtrs, nil)
+func (q *Query[T]) Insert(data T, tableFieldPtrs ...interface{}) QueryResult {
+    return q.insert(false, []T{data}, tableFieldPtrs, nil)
 }
 
 //tableFieldPtrs: allow insert table columns
-func (m *Query[T]) Inserts(data []T, tableFieldPtrs ...interface{}) QueryResult {
-    return m.insert(false, data, tableFieldPtrs, nil)
+func (q *Query[T]) Inserts(data []T, tableFieldPtrs ...interface{}) QueryResult {
+    return q.insert(false, data, tableFieldPtrs, nil)
 }
 
 //insert ignore ... // on duplicate key update ...
-func (m *Query[T]) InsertsIgnore(data []T, updates []UpdateColumn, tableFieldPtrs ...interface{}) QueryResult {
-    return m.insert(true, data, tableFieldPtrs, updates)
+func (q *Query[T]) InsertsIgnore(data []T, updates []UpdateColumn, tableFieldPtrs ...interface{}) QueryResult {
+    return q.insert(true, data, tableFieldPtrs, updates)
 }
 
-func (m *Query[T]) InsertSubquery(data SubQuery, updates []UpdateColumn, tableFieldPtrs ...interface{}) QueryResult {
-    return m.insert(true, data, tableFieldPtrs, updates)
+func (q *Query[T]) InsertSubquery(data SubQuery, updates []UpdateColumn, tableFieldPtrs ...interface{}) QueryResult {
+    return q.insert(true, data, tableFieldPtrs, updates)
 }
 
-func (m *Query[T]) gennerateInsertSql(InsertColumns []string, rowCount int) string {
+func (q *Query[T]) gennerateInsertSql(InsertColumns []string, rowCount int) string {
     columnRawStr := ""
     valRawStr := ""
 
@@ -49,7 +49,7 @@ func (m *Query[T]) gennerateInsertSql(InsertColumns []string, rowCount int) stri
     }
 }
 
-func (m *Query[T]) getInsertBindings(val reflect.Value, isSlice bool, validFieldIndex map[int]struct{}, defaults map[int]interface{}) []interface{} {
+func (q *Query[T]) getInsertBindings(val reflect.Value, isSlice bool, validFieldIndex map[int]struct{}, defaults map[int]interface{}) []interface{} {
     var bindings []interface{}
     if isSlice == false {
         for i := 0; i < val.NumField(); i++ {
@@ -77,7 +77,7 @@ func (m *Query[T]) getInsertBindings(val reflect.Value, isSlice bool, validField
     return bindings
 }
 
-func (m *Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interface{}, updates []UpdateColumn) QueryResult {
+func (q *Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interface{}, updates []UpdateColumn) QueryResult {
     val := reflect.ValueOf(data)
     var err error
     isSlice := false
@@ -89,35 +89,35 @@ func (m *Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interf
     if val.Kind() == reflect.Slice {
         rowCount = val.Len()
         if rowCount == 0 {
-            m.setErr(errors.New("slice is empty"))
-            return m.result
+            q.setErr(errors.New("slice is empty"))
+            return q.result
         }
         if val.Index(0).Kind() != reflect.Struct {
-            m.setErr(errors.New("slice elem must be struct"))
+            q.setErr(errors.New("slice elem must be struct"))
         } else {
             isSlice = true
             structFields, err = getStructFieldNameSlice(val.Index(0).Interface())
-            m.setErr(err)
+            q.setErr(err)
             structDefaults, err = getStructFieldWithDefaultTime(val.Index(0).Interface())
-            m.setErr(err)
+            q.setErr(err)
         }
     } else if val.Kind() == reflect.Struct {
         sub, ok := data.(SubQuery)
         if ok == false {
             structFields, err = getStructFieldNameSlice(data)
-            m.setErr(err)
+            q.setErr(err)
             structDefaults, err = getStructFieldWithDefaultTime(val.Index(0).Interface())
-            m.setErr(err)
+            q.setErr(err)
         } else {
             isSubQuery = true
             subq = sub
         }
     } else {
-        m.setErr(errors.New("data must be struct or slice of struct"))
+        q.setErr(errors.New("data must be struct or slice of struct"))
     }
 
-    if m.result.Err != nil {
-        return m.result
+    if q.result.Err != nil {
+        return q.result
     }
 
     var validFieldNameMap = make(map[string]struct{})
@@ -129,7 +129,7 @@ func (m *Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interf
     for _, v := range tableFieldPtrs {
         allowFields[v] = struct{}{}
     }
-    for k, v := range m.tables[0].ormFields {
+    for k, v := range q.tables[0].ormFields {
         _, ok := allowFields[k]
         if ok || (len(allowFields) == 0 && isSubQuery == false) {
             validFieldNameMap[v] = struct{}{}
@@ -140,7 +140,7 @@ func (m *Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interf
     var insertSql, updateStr string
     var bindings []interface{}
     if isSubQuery {
-        insertSql = m.gennerateInsertSql(validFieldNames, 0)
+        insertSql = q.gennerateInsertSql(validFieldNames, 0)
         if insertSql != "" {
             insertSql += " "
         }
@@ -153,18 +153,18 @@ func (m *Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interf
                 InsertColumns = append(InsertColumns, v)
             }
         }
-        insertSql = m.gennerateInsertSql(InsertColumns, rowCount)
-        bindings = m.getInsertBindings(val, isSlice, validFieldIndex, structDefaults)
+        insertSql = q.gennerateInsertSql(InsertColumns, rowCount)
+        bindings = q.getInsertBindings(val, isSlice, validFieldIndex, structDefaults)
     }
 
-    updateStr = m.generateUpdateStr(updates, &bindings)
+    updateStr = q.generateUpdateStr(updates, &bindings)
 
     rawSql := "insert"
     if ignore {
         rawSql += " ignore"
     }
 
-    rawSql += " into " + m.tables[0].getTableName() + " " + insertSql
+    rawSql += " into " + q.tables[0].getTableName() + " " + insertSql
 
     if updateStr != "" {
         rawSql += " on duplicate key update " + updateStr
@@ -172,8 +172,8 @@ func (m *Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interf
 
     rawSql += ";"
 
-    m.prepareSql = rawSql
-    m.bindings = bindings
+    q.prepareSql = rawSql
+    q.bindings = bindings
 
-    return m.Execute()
+    return q.Execute()
 }

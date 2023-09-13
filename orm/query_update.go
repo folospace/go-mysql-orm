@@ -5,23 +5,23 @@ import (
     "strings"
 )
 
-func (m *Query[T]) Update(column interface{}, val interface{}) QueryResult {
-    return m.Updates(UpdateColumn{
+func (q *Query[T]) Update(column interface{}, val interface{}) QueryResult {
+    return q.Updates(UpdateColumn{
         Column: column,
         Val:    val,
     })
 }
 
-func (m *Query[T]) Updates(updates ...UpdateColumn) QueryResult {
+func (q *Query[T]) Updates(updates ...UpdateColumn) QueryResult {
     bindings := make([]interface{}, 0)
 
-    tableStr := m.generateTableAndJoinStr(m.tables, &bindings)
+    tableStr := q.generateTableAndJoinStr(q.tables, &bindings)
 
-    updateStr := m.generateUpdateStr(updates, &bindings)
+    updateStr := q.generateUpdateStr(updates, &bindings)
 
-    whereStr := m.generateWhereStr(m.wheres, &bindings)
+    whereStr := q.generateWhereStr(q.wheres, &bindings)
 
-    orderAndLimitStr := m.getOrderAndLimitSqlStr()
+    orderAndLimitStr := q.getOrderAndLimitSqlStr()
 
     rawSql := "update " + tableStr
     if updateStr != "" {
@@ -35,23 +35,23 @@ func (m *Query[T]) Updates(updates ...UpdateColumn) QueryResult {
         rawSql += " " + orderAndLimitStr
     }
 
-    m.prepareSql = rawSql
-    m.bindings = bindings
+    q.prepareSql = rawSql
+    q.bindings = bindings
 
-    return m.Execute()
+    return q.Execute()
 }
 
-func (m *Query[T]) generateUpdateStr(updates []UpdateColumn, bindings *[]interface{}) string {
+func (q *Query[T]) generateUpdateStr(updates []UpdateColumn, bindings *[]interface{}) string {
     var updateStrs []string
     for _, v := range updates {
         var temp string
-        column, err := m.parseColumn(v.Column)
+        column, err := q.parseColumn(v.Column)
         if err != nil {
-            m.setErr(err)
+            q.setErr(err)
             return ""
         }
 
-        val, ok := m.isRaw(v.Val)
+        val, ok := q.isRaw(v.Val)
         if ok {
             temp = column + " = " + val
         } else if reflect.ValueOf(v.Val).Kind() == reflect.Ptr {
@@ -59,9 +59,9 @@ func (m *Query[T]) generateUpdateStr(updates []UpdateColumn, bindings *[]interfa
                 dotIndex := strings.LastIndex(column, ".")
                 temp = column + " = values(" + strings.Trim(column[dotIndex+1:], "`") + ")"
             } else {
-                targetColumn, err := m.parseColumn(v.Val)
+                targetColumn, err := q.parseColumn(v.Val)
                 if err != nil {
-                    m.setErr(err)
+                    q.setErr(err)
                     return ""
                 }
                 temp = column + " = " + targetColumn

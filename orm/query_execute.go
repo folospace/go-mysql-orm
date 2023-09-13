@@ -5,38 +5,38 @@ import (
 )
 
 //excute raw
-func (m *Query[T]) Execute() QueryResult {
-    if m.prepareSql == "" {
-        m.setErr(ErrRawSqlRequired)
+func (q *Query[T]) Execute() QueryResult {
+    if q.prepareSql == "" {
+        q.setErr(ErrRawSqlRequired)
     }
-    if m.result.Err != nil {
-        return m.result
+    if q.result.Err != nil {
+        return q.result
     }
 
-    m.result.PrepareSql = m.prepareSql
-    m.result.Bindings = m.bindings
+    q.result.PrepareSql = q.prepareSql
+    q.result.Bindings = q.bindings
 
     var res sql.Result
     var err error
-    if m.dbTx() != nil {
-        if m.ctx != nil {
-            res, err = m.dbTx().ExecContext(*m.ctx, m.prepareSql, m.bindings...)
+    if q.dbTx() != nil {
+        if q.ctx != nil {
+            res, err = q.dbTx().ExecContext(*q.ctx, q.prepareSql, q.bindings...)
         } else {
-            res, err = m.dbTx().Exec(m.prepareSql, m.bindings...)
+            res, err = q.dbTx().Exec(q.prepareSql, q.bindings...)
         }
     } else {
-        if m.ctx != nil {
-            res, err = m.DB().ExecContext(*m.ctx, m.prepareSql, m.bindings...)
+        if q.ctx != nil {
+            res, err = q.DB().ExecContext(*q.ctx, q.prepareSql, q.bindings...)
         } else {
-            res, err = m.DB().Exec(m.prepareSql, m.bindings...)
+            res, err = q.DB().Exec(q.prepareSql, q.bindings...)
         }
     }
 
     if err != nil {
-        m.result.Err = err
+        q.result.Err = err
     } else if res != nil {
-        m.result.LastInsertId, m.result.Err = res.LastInsertId()
-        m.result.RowsAffected, m.result.Err = res.RowsAffected()
+        q.result.LastInsertId, q.result.Err = res.LastInsertId()
+        q.result.RowsAffected, q.result.Err = res.RowsAffected()
     }
-    return m.result
+    return q.result
 }
