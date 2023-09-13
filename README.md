@@ -4,18 +4,6 @@ A golang orm package dedicated to simplify developing with mysql database.
 
 Base on [go-sql-driver/mysql](https://github.com/go-sql-driver/mysql).
 
-Completed Features:
-- support golang 1.18 generics
-- try to avoid using raw strings.
-- create mysql table from golang struct
-- create golang struct from mysql table
-- update query, insert query, delete query
-- support transaction
-- select (update | insert) with subquery
-- join (left join | right join) table
-- select with window function (rank())
-- select with common table expression (cte)
-
 ## Get Started
 ```go
  go get -u github.com/folospace/go-mysql-orm
