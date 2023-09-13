@@ -1,6 +1,6 @@
 package orm
 
-func (m Query[T]) Delete(primaryIds ...interface{}) QueryResult {
+func (m *Query[T]) Delete(primaryIds ...interface{}) QueryResult {
     if len(m.tables) == 0 {
         m.setErr(ErrTableNotSelected)
         return m.result
@@ -12,7 +12,7 @@ func (m Query[T]) Delete(primaryIds ...interface{}) QueryResult {
     }
 }
 
-func (m Query[T]) delete() QueryResult {
+func (m *Query[T]) delete() QueryResult {
     bindings := make([]interface{}, 0)
 
     tableStr := m.generateTableAndJoinStr(m.tables, &bindings)

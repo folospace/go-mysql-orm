@@ -4,7 +4,7 @@ import (
     "strings"
 )
 
-func (m Query[T]) SubQuery() SubQuery {
+func (m *Query[T]) SubQuery() SubQuery {
     if m.self != nil {
         cte := m.self
         m.self = nil
@@ -35,7 +35,7 @@ func (m Query[T]) SubQuery() SubQuery {
     }
 }
 
-func (m Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
+func (m *Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
     var ret SubQuery
     if m.prepareSql != "" {
         ret.raw = m.prepareSql
@@ -143,7 +143,7 @@ func (m Query[T]) generateSelectQuery(columns ...interface{}) SubQuery {
     return ret
 }
 
-func (m Query[T]) generateSelectColumns(columns ...interface{}) (string, error) {
+func (m *Query[T]) generateSelectColumns(columns ...interface{}) (string, error) {
     var outColumns []string
     for _, v := range columns {
         column, err := m.parseColumn(v)

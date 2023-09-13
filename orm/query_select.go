@@ -14,19 +14,19 @@ const (
     SelectForUpdateTypeSkipLocked SelectForUpdateType = "for update skip locked"
 )
 
-func (m Query[T]) SelectRank(column interface{}, alias string) Query[T] {
-    return m.SelectOver("rank()", func(query Query[T]) Query[T] {
+func (m *Query[T]) SelectRank(column interface{}, alias string) *Query[T] {
+    return m.SelectOver("rank()", func(query *Query[T]) *Query[T] {
         return query.OrderBy(column)
     }, alias)
 }
 
-func (m Query[T]) SelectRankDesc(column interface{}, alias string) Query[T] {
-    return m.SelectOver("rank()", func(query Query[T]) Query[T] {
+func (m *Query[T]) SelectRankDesc(column interface{}, alias string) *Query[T] {
+    return m.SelectOver("rank()", func(query *Query[T]) *Query[T] {
         return query.OrderByDesc(column)
     }, alias)
 }
 
-func (m Query[T]) SelectOver(windowFunc string, f func(query Query[T]) Query[T], alias string) Query[T] {
+func (m *Query[T]) SelectOver(windowFunc string, f func(query *Query[T]) *Query[T], alias string) *Query[T] {
     partitionStart := len(m.partitionbys)
     orderStart := len(m.orderbys)
     nq := f(m)
@@ -50,18 +50,18 @@ func (m Query[T]) SelectOver(windowFunc string, f func(query Query[T]) Query[T],
     return m
 }
 
-func (m Query[T]) SelectOverRaw(windowFunc string, windowName string, alias string) Query[T] {
+func (m *Query[T]) SelectOverRaw(windowFunc string, windowName string, alias string) *Query[T] {
     newSelect := windowFunc + " over " + windowName + " as " + alias
     m.columns = append(m.columns, newSelect)
     return m
 }
 
-func (m Query[T]) Select(columns ...interface{}) Query[T] {
+func (m *Query[T]) Select(columns ...interface{}) *Query[T] {
     m.columns = append(m.columns, columns...)
     return m
 }
 
-func (m Query[T]) ForUpdate(forUpdateType ...SelectForUpdateType) Query[T] {
+func (m *Query[T]) ForUpdate(forUpdateType ...SelectForUpdateType) *Query[T] {
     if len(forUpdateType) == 0 {
         m.forUpdate = SelectForUpdateTypeDefault
     } else {
@@ -70,7 +70,7 @@ func (m Query[T]) ForUpdate(forUpdateType ...SelectForUpdateType) Query[T] {
     return m
 }
 
-func (m Query[T]) SelectWithTimeout(duration time.Duration) Query[T] {
+func (m *Query[T]) SelectWithTimeout(duration time.Duration) *Query[T] {
     ms := duration.Milliseconds()
     if ms > 0 {
         m.selectTimeout = "/*+ MAX_EXECUTION_TIME(+" + strconv.FormatInt(ms, 10) + "+) */"

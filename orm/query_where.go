@@ -25,7 +25,7 @@ const (
     WhereIsNotNull      WhereOperator = "is not null"
 )
 
-func (m Query[T]) where(isOr bool, column interface{}, vals ...interface{}) Query[T] {
+func (m *Query[T]) where(isOr bool, column interface{}, vals ...interface{}) *Query[T] {
     if len(vals) > 2 {
         return m.setErr(errors.New("two many where-params"))
     }
@@ -113,7 +113,7 @@ func (m Query[T]) where(isOr bool, column interface{}, vals ...interface{}) Quer
     return m
 }
 
-func (m Query[T]) generateWhereStr(wheres []where, bindings *[]interface{}) string {
+func (m *Query[T]) generateWhereStr(wheres []where, bindings *[]interface{}) string {
     var whereStr []string
     for k, v := range wheres {
         tempStr := ""
@@ -145,7 +145,7 @@ func (m Query[T]) generateWhereStr(wheres []where, bindings *[]interface{}) stri
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m Query[T]) Where(column interface{}, vals ...interface{}) Query[T] {
+func (m *Query[T]) Where(column interface{}, vals ...interface{}) *Query[T] {
     t := m.where(false, column, vals...)
     return t
 }
@@ -153,12 +153,12 @@ func (m Query[T]) Where(column interface{}, vals ...interface{}) Query[T] {
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m Query[T]) OrWhere(column interface{}, vals ...interface{}) Query[T] {
+func (m *Query[T]) OrWhere(column interface{}, vals ...interface{}) *Query[T] {
     return m.where(true, column, vals...)
 }
 
 //short for Where(primaryKey, vals...)
-func (m Query[T]) WherePrimary(operator interface{}, vals ...interface{}) Query[T] {
+func (m *Query[T]) WherePrimary(operator interface{}, vals ...interface{}) *Query[T] {
     //operator as vals
     if len(vals) == 0 {
         vals = []interface{}{operator}
@@ -177,7 +177,7 @@ func (m Query[T]) WherePrimary(operator interface{}, vals ...interface{}) Query[
 }
 
 //short for OrWhere(primaryKey, vals...)
-func (m Query[T]) OrWherePrimary(operator interface{}, vals ...interface{}) Query[T] {
+func (m *Query[T]) OrWherePrimary(operator interface{}, vals ...interface{}) *Query[T] {
     //operator as vals
     if len(vals) == 0 {
         reflectVar := reflect.ValueOf(operator)
@@ -197,18 +197,18 @@ func (m Query[T]) OrWherePrimary(operator interface{}, vals ...interface{}) Quer
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m Query[T]) WhereFunc(f func(Query[T]) Query[T]) Query[T] {
+func (m *Query[T]) WhereFunc(f func(*Query[T]) *Query[T]) *Query[T] {
     return m.whereGroup(false, f)
 }
 
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (m Query[T]) OrWhereFunc(f func(Query[T]) Query[T]) Query[T] {
+func (m *Query[T]) OrWhereFunc(f func(*Query[T]) *Query[T]) *Query[T] {
     return m.whereGroup(true, f)
 }
 
-func (m Query[T]) whereGroup(isOr bool, f func(Query[T]) Query[T]) Query[T] {
+func (m *Query[T]) whereGroup(isOr bool, f func(*Query[T]) *Query[T]) *Query[T] {
     temp, err := m.generateWhereGroup(f)
     m.setErr(err)
     if len(temp.SubWheres) > 0 {
@@ -218,7 +218,7 @@ func (m Query[T]) whereGroup(isOr bool, f func(Query[T]) Query[T]) Query[T] {
     return m
 }
 
-func (m Query[T]) generateWhereGroup(f func(Query[T]) Query[T]) (where, error) {
+func (m *Query[T]) generateWhereGroup(f func(*Query[T]) *Query[T]) (where, error) {
     start := len(m.wheres)
     nq := f(m)
     newWheres := nq.wheres[start:]

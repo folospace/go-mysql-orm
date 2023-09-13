@@ -7,35 +7,35 @@ import (
 )
 
 //get first T
-func (m Query[T]) Get(primaryIds ...interface{}) (T, QueryResult) {
+func (m *Query[T]) Get(primaryIds ...interface{}) (T, QueryResult) {
     var ret T
     res := m.WherePrimary(primaryIds).Limit(1).GetTo(&ret)
     return ret, res
 }
 
 //get slice T
-func (m Query[T]) Gets(primaryIds ...interface{}) ([]T, QueryResult) {
+func (m *Query[T]) Gets(primaryIds ...interface{}) ([]T, QueryResult) {
     var ret []T
     res := m.WherePrimary(primaryIds).GetTo(&ret)
     return ret, res
 }
 
 //get first row
-func (m Query[T]) GetRow() (map[string]interface{}, QueryResult) {
+func (m *Query[T]) GetRow() (map[string]interface{}, QueryResult) {
     var ret map[string]interface{}
     res := m.Limit(1).GetTo(&ret)
     return ret, res
 }
 
 //get slice row
-func (m Query[T]) GetRows() ([]map[string]interface{}, QueryResult) {
+func (m *Query[T]) GetRows() ([]map[string]interface{}, QueryResult) {
     var ret []map[string]interface{}
     res := m.GetTo(&ret)
     return ret, res
 }
 
 //get count T
-func (m Query[T]) GetCount() (int64, QueryResult) {
+func (m *Query[T]) GetCount() (int64, QueryResult) {
     var ret int64
     if len(m.groupBy) == 0 {
         if len(m.columns) == 0 {
@@ -69,7 +69,7 @@ func (m Query[T]) GetCount() (int64, QueryResult) {
 //destPtr: *map [int | string | ...] int | string ...
 //destPtr: *map [int | string | ...] struct
 //destPtr: *map [int | string | ...] []struct
-func (m Query[T]) GetTo(destPtr interface{}) QueryResult {
+func (m *Query[T]) GetTo(destPtr interface{}) QueryResult {
     tempTable := m.SubQuery()
 
     m.result.PrepareSql = tempTable.raw
@@ -113,7 +113,7 @@ func (m Query[T]) GetTo(destPtr interface{}) QueryResult {
     return m.result
 }
 
-func (m Query[T]) scanValues(basePtrs []interface{}, rowColumns []string, rows *sql.Rows, setVal func(), tryOnce bool) error {
+func (m *Query[T]) scanValues(basePtrs []interface{}, rowColumns []string, rows *sql.Rows, setVal func(), tryOnce bool) error {
     var err error
     var tempPtrs = make([]interface{}, len(rowColumns))
     for k := range rowColumns {
@@ -153,7 +153,7 @@ func (m Query[T]) scanValues(basePtrs []interface{}, rowColumns []string, rows *
     return err
 }
 
-func (m Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
+func (m *Query[T]) scanRows(dest interface{}, rows *sql.Rows) error {
     rowColumns, gerr := rows.Columns()
     if gerr != nil {
         return gerr

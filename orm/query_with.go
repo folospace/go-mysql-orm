@@ -5,7 +5,7 @@ import (
     "strings"
 )
 
-func (m Query[T]) WithParentsOnColumn(pidColumn interface{}) Query[T] {
+func (m *Query[T]) WithParentsOnColumn(pidColumn interface{}) *Query[T] {
     tempName := m.TableInterface().TableName() + "_cte"
 
     col, err := m.parseColumn(pidColumn)
@@ -18,15 +18,15 @@ func (m Query[T]) WithParentsOnColumn(pidColumn interface{}) Query[T] {
     cte := NewQueryRaw(tempName, m.DBs()...)
 
     appendQuery := NewQuery(m.T, m.DBs()...)
-    appendQuery = appendQuery.Join(cte.T, func(query Query[T]) Query[T] {
+    appendQuery = appendQuery.Join(cte.T, func(query *Query[T]) *Query[T] {
         return query.Where(appendQuery.tables[0].tableStruct.Field(0).Addr().Interface(), Raw(tempName+"."+newcol))
     }).Select(appendQuery.AllCols())
 
-    m.self = &cte
+    m.self = cte
     return m.UnionAll(appendQuery.SubQuery())
 }
 
-func (m Query[T]) WithChildrenOnColumn(pidColumn interface{}) Query[T] {
+func (m *Query[T]) WithChildrenOnColumn(pidColumn interface{}) *Query[T] {
     tempName := m.TableInterface().TableName() + "_cte"
 
     pcol, err := m.parseColumn(pidColumn)
@@ -46,23 +46,23 @@ func (m Query[T]) WithChildrenOnColumn(pidColumn interface{}) Query[T] {
     cte := NewQueryRaw(tempName, m.DBs()...)
 
     appendQuery := NewQuery(m.T, m.DBs()...)
-    appendQuery = appendQuery.Join(cte.T, func(query Query[T]) Query[T] {
+    appendQuery = appendQuery.Join(cte.T, func(query *Query[T]) *Query[T] {
         return query.Where(pcol, Raw(tempName+"."+newcol))
     }).Select(appendQuery.AllCols())
 
-    m.self = &cte
+    m.self = cte
     return m.UnionAll(appendQuery.SubQuery())
 }
 
-func (m Query[T]) WithCte(subquery SubQuery, cteName string, columns ...string) Query[T] {
+func (m *Query[T]) WithCte(subquery SubQuery, cteName string, columns ...string) *Query[T] {
     return m.withCte(subquery, cteName, false, columns...)
 }
 
-func (m Query[T]) WithRecursiveCte(subquery SubQuery, cteName string, columns ...string) Query[T] {
+func (m *Query[T]) WithRecursiveCte(subquery SubQuery, cteName string, columns ...string) *Query[T] {
     return m.withCte(subquery, cteName, true, columns...)
 }
 
-func (m Query[T]) withCte(subquery SubQuery, cteName string, recursive bool, columns ...string) Query[T] {
+func (m *Query[T]) withCte(subquery SubQuery, cteName string, recursive bool, columns ...string) *Query[T] {
     subquery.tableName = cteName
     subquery.recursive = recursive
     subquery.columns = columns
@@ -71,7 +71,7 @@ func (m Query[T]) withCte(subquery SubQuery, cteName string, recursive bool, col
     return m
 }
 
-func (m Query[T]) WithContext(ctx context.Context) Query[T] {
+func (m *Query[T]) WithContext(ctx context.Context) *Query[T] {
     m.ctx = &ctx
     return m
 }

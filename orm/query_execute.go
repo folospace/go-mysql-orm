@@ -5,7 +5,7 @@ import (
 )
 
 //excute raw
-func (m Query[T]) Execute() QueryResult {
+func (m *Query[T]) Execute() QueryResult {
     if m.prepareSql == "" {
         m.setErr(ErrRawSqlRequired)
     }

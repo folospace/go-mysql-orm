@@ -7,25 +7,25 @@ import (
 )
 
 //tableFieldPtrs: allow insert table columns
-func (m Query[T]) Insert(data T, tableFieldPtrs ...interface{}) QueryResult {
+func (m *Query[T]) Insert(data T, tableFieldPtrs ...interface{}) QueryResult {
     return m.insert(false, []T{data}, tableFieldPtrs, nil)
 }
 
 //tableFieldPtrs: allow insert table columns
-func (m Query[T]) Inserts(data []T, tableFieldPtrs ...interface{}) QueryResult {
+func (m *Query[T]) Inserts(data []T, tableFieldPtrs ...interface{}) QueryResult {
     return m.insert(false, data, tableFieldPtrs, nil)
 }
 
 //insert ignore ... // on duplicate key update ...
-func (m Query[T]) InsertsIgnore(data []T, updates []UpdateColumn, tableFieldPtrs ...interface{}) QueryResult {
+func (m *Query[T]) InsertsIgnore(data []T, updates []UpdateColumn, tableFieldPtrs ...interface{}) QueryResult {
     return m.insert(true, data, tableFieldPtrs, updates)
 }
 
-func (m Query[T]) InsertSubquery(data SubQuery, updates []UpdateColumn, tableFieldPtrs ...interface{}) QueryResult {
+func (m *Query[T]) InsertSubquery(data SubQuery, updates []UpdateColumn, tableFieldPtrs ...interface{}) QueryResult {
     return m.insert(true, data, tableFieldPtrs, updates)
 }
 
-func (m Query[T]) gennerateInsertSql(InsertColumns []string, rowCount int) string {
+func (m *Query[T]) gennerateInsertSql(InsertColumns []string, rowCount int) string {
     columnRawStr := ""
     valRawStr := ""
 
@@ -49,7 +49,7 @@ func (m Query[T]) gennerateInsertSql(InsertColumns []string, rowCount int) strin
     }
 }
 
-func (m Query[T]) getInsertBindings(val reflect.Value, isSlice bool, validFieldIndex map[int]struct{}, defaults map[int]interface{}) []interface{} {
+func (m *Query[T]) getInsertBindings(val reflect.Value, isSlice bool, validFieldIndex map[int]struct{}, defaults map[int]interface{}) []interface{} {
     var bindings []interface{}
     if isSlice == false {
         for i := 0; i < val.NumField(); i++ {
@@ -77,7 +77,7 @@ func (m Query[T]) getInsertBindings(val reflect.Value, isSlice bool, validFieldI
     return bindings
 }
 
-func (m Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interface{}, updates []UpdateColumn) QueryResult {
+func (m *Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interface{}, updates []UpdateColumn) QueryResult {
     val := reflect.ValueOf(data)
     var err error
     isSlice := false
