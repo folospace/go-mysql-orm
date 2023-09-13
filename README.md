@@ -38,7 +38,7 @@ func main() {
 }        
 ```
 
-## select query usage
+## select 
 
 ```go
     //get first user (name='join') as struct
