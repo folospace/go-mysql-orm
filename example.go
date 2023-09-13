@@ -10,28 +10,35 @@ import (
 //connect mysql db
 var db, _ = orm.OpenMysql("user:password@tcp(127.0.0.1:3306)/mydb?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
 
-//user table model
-var UserTable = orm.NewQuery(User{}, db)
+//query user
+var UserQuery = orm.NewQuery(User{})
 
 type User struct {
     Id   int    `json:"id"`
     Name string `json:"name"`
 }
 
-func (User) TableName() string {
-    return "user"
+func (User) Connection() []*sql.DB {
+    return []*sql.DB{db}
 }
 func (User) DatabaseName() string {
     return "mydb"
 }
+func (User) TableName() string {
+    return "user"
+}
 
 //user table model
-var OrderTable = orm.NewQuery(Order{}, db)
+var OrderQuery = orm.NewQuery(Order{})
 
 type Order struct {
     Id          int `json:"id"`
     UserId      int `json:"user_id"`
     OrderAmount int `json:"order_amount"`
+}
+
+func (o Order) Connection() []*sql.DB {
+    return []*sql.DB{db}
 }
 
 func (Order) TableName() string {
@@ -44,70 +51,70 @@ func (Order) DatabaseName() string {
 func main() {
     {
         //create db table from go struct
-        _, _ = orm.CreateTableFromStruct(UserTable)
+        _, _ = orm.CreateTableFromStruct(UserQuery)
         //create go struct from db table
-        _ = orm.CreateStructFromTable(UserTable)
+        _ = orm.CreateStructFromTable(UserQuery)
     }
 
     //query select
     {
         //get first user (name='join') as struct
-        user, query := UserTable.Where(&UserTable.T.Name, "john").Get()
+        user, query := UserQuery.Where(&UserQuery.T.Name, "john").Get()
         fmt.Println(user, query.Sql(), query.Error())
 
         //get users by primary ids
-        users, query := UserTable.Gets(1, 2, 3)
+        users, query := UserQuery.Gets(1, 2, 3)
         fmt.Println(users, query.Sql(), query.Error())
 
         //get user rows as []map[string]interface
-        rows, query := UserTable.Limit(5).GetRows()
+        rows, query := UserQuery.Limit(5).GetRows()
         fmt.Println(rows, query.Sql(), query.Error())
 
         //get users count(*)
-        count, query := UserTable.GetCount()
+        count, query := UserQuery.GetCount()
         fmt.Println(count, query.Sql(), query.Error())
 
         //get user names map key by id
         var userNameKeyById map[int]string
-        UserTable.Select(&UserTable.T.Id, &UserTable.T.Name).GetTo(&userNameKeyById)
+        UserQuery.Select(&UserQuery.T.Id, &UserQuery.T.Name).GetTo(&userNameKeyById)
 
         //get users map key by name
         var usersMapkeyByName map[string][]User
-        UserTable.Select(&UserTable.T.Name, UserTable.AllCols()).GetTo(&usersMapkeyByName)
+        UserQuery.Select(&UserQuery.T.Name, UserQuery.AllCols()).GetTo(&usersMapkeyByName)
 
         //select rank by column
-        OrderTable.Where(&OrderTable.T.UserId, 1).
-            Select(OrderTable.AllCols()).
-            SelectRank(&OrderTable.T.OrderAmount, "order_amount_rank").GetRows()
+        OrderQuery.Where(&OrderQuery.T.UserId, 1).
+            Select(OrderQuery.AllCols()).
+            SelectRank(&OrderQuery.T.OrderAmount, "order_amount_rank").GetRows()
     }
 
     //query update and delete and insert
     {
         //update user set name="hello" where id=1
-        UserTable.WherePrimary(1).Update(&UserTable.T.Name, "hello")
+        UserQuery.WherePrimary(1).Update(&UserQuery.T.Name, "hello")
 
         //query delete
-        UserTable.Delete(1, 2, 3)
+        UserQuery.Delete(1, 2, 3)
 
         //query insert
-        _ = UserTable.Insert(User{Name: "han"}).LastInsertId //insert one row and get id
+        _ = UserQuery.Insert(User{Name: "han"}).LastInsertId //insert one row and get id
 
         //insert batch on duplicate key update name=values(name)
-        _ = UserTable.InsertsIgnore([]User{{Id: 1, Name: "han"}, {Id: 2, Name: "jen"}},
-            []orm.UpdateColumn{{Column: &UserTable.T.Name, Val: &UserTable.T.Name}})
+        _ = UserQuery.InsertsIgnore([]User{{Id: 1, Name: "han"}, {Id: 2, Name: "jen"}},
+            []orm.UpdateColumn{{Column: &UserQuery.T.Name, Val: &UserQuery.T.Name}})
     }
 
     //query join
     {
-        UserTable.Join(OrderTable.T, func(query orm.Query[User]) orm.Query[User] {
-            return query.Where(&UserTable.T.Id, &OrderTable.T.UserId)
-        }).Where(&OrderTable.T.OrderAmount, 100).
-            Select(UserTable.AllCols()).Gets()
+        UserQuery.Join(OrderQuery.T, func(query orm.Query[User]) orm.Query[User] {
+            return query.Where(&UserQuery.T.Id, &OrderQuery.T.UserId)
+        }).Where(&OrderQuery.T.OrderAmount, 100).
+            Select(UserQuery.AllCols()).Gets()
     }
     {
         //transaction
-        _ = UserTable.Transaction(func(tx *sql.Tx) error {
-            newId := UserTable.UseTx(tx).Insert(User{Name: "john"}).LastInsertId //insert
+        _ = UserQuery.Transaction(func(tx *sql.Tx) error {
+            newId := UserQuery.UseTx(tx).Insert(User{Name: "john"}).LastInsertId //insert
             fmt.Println(newId)
             return errors.New("I want rollback") //rollback
         })
@@ -115,17 +122,17 @@ func main() {
 
     {
         //subquery
-        subquery := UserTable.Where(&UserTable.T.Id, 1).SubQuery()
+        subquery := UserQuery.Where(&UserQuery.T.Id, 1).SubQuery()
 
         //where in suquery
-        UserTable.Where(&UserTable.T.Id, orm.WhereIn, subquery).Gets()
+        UserQuery.Where(&UserQuery.T.Id, orm.WhereIn, subquery).Gets()
 
         //insert subquery
-        UserTable.InsertSubquery(subquery, nil)
+        UserQuery.InsertSubquery(subquery, nil)
 
         //join subquery
-        UserTable.Join(subquery, func(query orm.Query[User]) orm.Query[User] {
-            return query.Where(&UserTable.T.Id, orm.Raw("sub.id"))
+        UserQuery.Join(subquery, func(query orm.Query[User]) orm.Query[User] {
+            return query.Where(&UserQuery.T.Id, orm.Raw("sub.id"))
         }).Gets()
     }
 }

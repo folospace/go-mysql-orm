@@ -1,6 +1,7 @@
 package main
 
 import (
+    "database/sql"
     "github.com/folospace/go-mysql-orm/orm"
     "testing"
     "time"
@@ -8,7 +9,7 @@ import (
 
 var tdb, _ = orm.OpenMysql("rfamro@tcp(mysql-rfam-public.ebi.ac.uk:4497)/Rfam?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
 
-var FamilyTable2 = orm.NewQuery(Family2{}, tdb)
+var FamilyTable2 = orm.NewQuery(Family2{})
 
 type Family2 struct {
     RfamAcc            string    `json:"rfam_acc" orm:"rfam_acc,varchar(7),primary,unique"`
@@ -46,6 +47,10 @@ type Family2 struct {
     HmmLambda          *float64  `json:"hmm_lambda" orm:"hmm_lambda,double(10,5),null" default:"NULL"`
     Created            time.Time `json:"created" orm:"created,datetime"`
     Updated            time.Time `json:"updated" orm:"updated,timestamp" default:"CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"`
+}
+
+func (f Family2) Connection() []*sql.DB {
+    return []*sql.DB{tdb}
 }
 
 func (Family2) TableName() string {

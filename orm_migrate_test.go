@@ -1,6 +1,7 @@
 package main
 
 import (
+    "database/sql"
     "github.com/folospace/go-mysql-orm/orm"
     "testing"
     "time"
@@ -44,6 +45,9 @@ type Family struct {
     Updated            time.Time `json:"updated" orm:"updated,timestamp" default:"CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"`
 }
 
+func (Family) Connection() []*sql.DB {
+    return []*sql.DB{tdb}
+}
 func (Family) TableName() string {
     return "family"
 }
@@ -54,7 +58,7 @@ func (Family) DatabaseName() string {
 
 func TestMigrate(t *testing.T) {
     t.Run("create_struct", func(t *testing.T) {
-        FamilyTable := orm.NewQuery(Family{}, tdb)
+        FamilyTable := orm.NewQuery(Family{})
 
         err := orm.CreateStructFromTable(FamilyTable)
 

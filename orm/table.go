@@ -1,6 +1,9 @@
 package orm
 
+import "database/sql"
+
 type Table interface {
-    TableName() string
+    Connection() []*sql.DB
     DatabaseName() string
+    TableName() string
 }

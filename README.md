@@ -30,19 +30,21 @@ import (
 var db, _ = orm.OpenMysql("user:password@tcp(127.0.0.1:3306)/mydb?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
 
 //user table model
-var UserTable = orm.NewQuery(User{}, db)
+var UserTable = orm.NewQuery(User{})
 
 type User struct {
     Id   int    `json:"id"`
     Name string `json:"name"`
 }
 
-//Table interface: implements two methods below 
-func (User) TableName() string {
-    return "user"
+func (User) Connection() []*sql.DB {
+    return []*sql.DB{db}
 }
 func (User) DatabaseName() string {
     return "mydb"
+}
+func (User) TableName() string {
+    return "user"
 }
 ```
 

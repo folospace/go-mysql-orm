@@ -15,9 +15,9 @@ func (m Query[T]) WithParentsOnColumn(pidColumn interface{}) Query[T] {
     coln := strings.Split(col, ".")
     newcol := strings.Trim(coln[len(coln)-1], "`")
 
-    cte := NewQueryRaw(tempName, m.writeAndReadDbs...)
+    cte := NewQueryRaw(tempName, m.DBs()...)
 
-    appendQuery := NewQuery(*m.T, m.writeAndReadDbs...)
+    appendQuery := NewQuery(*m.T, m.DBs()...)
     appendQuery = appendQuery.Join(cte.T, func(query Query[T]) Query[T] {
         return query.Where(appendQuery.tables[0].tableStruct.Field(0).Addr().Interface(), Raw(tempName+"."+newcol))
     }).Select(appendQuery.AllCols())
@@ -43,9 +43,9 @@ func (m Query[T]) WithChildrenOnColumn(pidColumn interface{}) Query[T] {
     coln := strings.Split(col, ".")
     newcol := strings.Trim(coln[len(coln)-1], "`")
 
-    cte := NewQueryRaw(tempName, m.writeAndReadDbs...)
+    cte := NewQueryRaw(tempName, m.DBs()...)
 
-    appendQuery := NewQuery(*m.T, m.writeAndReadDbs...)
+    appendQuery := NewQuery(*m.T, m.DBs()...)
     appendQuery = appendQuery.Join(cte.T, func(query Query[T]) Query[T] {
         return query.Where(pcol, Raw(tempName+"."+newcol))
     }).Select(appendQuery.AllCols())

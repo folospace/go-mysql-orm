@@ -24,6 +24,14 @@ func NewSubQuery(prepareSql string, bindings ...interface{}) SubQuery {
     return SubQuery{raw: prepareSql, bindings: bindings}
 }
 
+func (m SubQuery) Connection() []*sql.DB {
+    return m.dbs
+}
+
+func (m SubQuery) DatabaseName() string {
+    return m.dbName
+}
+
 func (m SubQuery) TableName() string {
     if m.tableName != "" {
         return m.tableName
@@ -32,10 +40,6 @@ func (m SubQuery) TableName() string {
         return subqueryDefaultName
     }
     return ""
-}
-
-func (m SubQuery) DatabaseName() string {
-    return m.dbName
 }
 
 func (m SubQuery) Error() error {

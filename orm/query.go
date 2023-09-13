@@ -81,15 +81,24 @@ func (m Query[T]) UseTx(tx *sql.Tx) Query[T] {
 func (m Query[T]) DB() *sql.DB {
     return m.writeDB()
 }
+
+func (m Query[T]) DBs() []*sql.DB {
+    if len(m.writeAndReadDbs) == 0 && len(m.tables) > 0 {
+        m.writeAndReadDbs = m.tables[0].table.Connection()
+    }
+    return m.writeAndReadDbs
+}
 func (m Query[T]) writeDB() *sql.DB {
-    if len(m.writeAndReadDbs) > 0 {
-        return m.writeAndReadDbs[0]
+    dbs := m.DBs()
+    if len(dbs) > 0 {
+        return dbs[0]
     }
     return nil
 }
 func (m Query[T]) readDB() *sql.DB {
-    if len(m.writeAndReadDbs) > 1 {
-        return m.writeAndReadDbs[rand.Intn(len(m.writeAndReadDbs)-1)+1] //rand get db
+    dbs := m.DBs()
+    if len(dbs) > 1 {
+        return dbs[rand.Intn(len(dbs)-1)+1] //rand get db
     } else {
         return m.writeDB()
     }
