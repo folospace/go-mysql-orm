@@ -84,11 +84,11 @@ func (q *Query[T]) GetTo(destPtr interface{}) QueryResult {
 
     var rows *sql.Rows
     var err error
-    if q.dbTx() != nil {
+    if q.Tx() != nil {
         if q.ctx != nil {
-            rows, err = q.dbTx().QueryContext(*q.ctx, tempTable.raw, tempTable.bindings...)
+            rows, err = q.Tx().QueryContext(*q.ctx, tempTable.raw, tempTable.bindings...)
         } else {
-            rows, err = q.dbTx().Query(tempTable.raw, tempTable.bindings...)
+            rows, err = q.Tx().Query(tempTable.raw, tempTable.bindings...)
         }
     } else {
         if q.ctx != nil {

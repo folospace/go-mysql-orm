@@ -7,6 +7,7 @@ import (
     "io/ioutil"
     "reflect"
     "regexp"
+    "runtime"
     "strings"
     "time"
 )
@@ -17,7 +18,7 @@ var findAutoIncrementRegex = regexp.MustCompile("(.+) AUTO_INCREMENT")
 var findNotNullRegex = regexp.MustCompile("(.+) NOT NULL")
 var findNullRegex = regexp.MustCompile("(.+) NULL")
 
-func (q *Query[T]) CreateStructFromTable() error {
+func (q *Query[T]) CreateStruct(file ...string) error {
     table := q.TableInterface()
     dbColumns, err := getTableDbColumns(q)
     if err != nil {
@@ -73,7 +74,14 @@ func (q *Query[T]) CreateStructFromTable() error {
         structLines = append(structLines, line)
     }
 
-    structFile := q.curFileName
+    var structFile = ""
+    if len(file) > 0 {
+        structFile = file[0]
+    } else {
+        _, fs, _, _ := runtime.Caller(1)
+        fmt.Println(fs)
+        structFile = fs
+    }
 
     fileBytes, err := ioutil.ReadFile(structFile)
     if err != nil {

@@ -3,7 +3,6 @@ package orm
 import (
     "fmt"
     "reflect"
-    "regexp"
     "sort"
     "strings"
     "time"
@@ -20,7 +19,7 @@ const deletedAtColumn = "deleted_at"
 
 var definedDefault = []string{"null", "current_timestamp", "current_timestamp on update current_timestamp"}
 
-var tagSplitRegex = regexp.MustCompile(`[^\s"]+|"([^"]*)"`)
+//var tagSplitRegex = regexp.MustCompile(`[^\s"]+|"([^"]*)"`)
 
 //a := r.FindAllString(s, -1)
 
@@ -39,7 +38,7 @@ type dBColumn struct {
     Uniques []string //composite unique index names
 }
 
-func (q *Query[T]) CreateTableFromStruct() (string, error) {
+func (q *Query[T]) CreateTable() (string, error) {
     originQuery := q
     db := originQuery.DB()
     if db == nil {

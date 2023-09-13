@@ -5,7 +5,6 @@ import (
     "database/sql"
     "math/rand"
     "reflect"
-    "runtime"
     "strconv"
     "strings"
 )
@@ -30,7 +29,6 @@ type Query[T Table] struct {
     bindings        []interface{}
     groupBy         []interface{}
     having          []where
-    curFileName     string
     unions          []SubQuery
     withCtes        []SubQuery
     windows         []SubQuery
@@ -41,7 +39,6 @@ type Query[T Table] struct {
 //query table[struct] generics
 func NewQuery[T Table](t *T, writeAndReadDbs ...*sql.DB) *Query[T] {
     q := Query[T]{T: t, writeAndReadDbs: writeAndReadDbs}
-    q.curFileName = q.currentFilename()
     return q.FromTable(q.TableInterface())
 }
 
@@ -57,6 +54,11 @@ func NewQueryRaw(tableName string, writeAndReadDbs ...*sql.DB) *Query[SubQuery] 
 //query from subquery
 func NewQuerySub(subquery SubQuery) *Query[SubQuery] {
     return NewQuery(&subquery, subquery.dbs...)
+}
+
+func (q *Query[T]) Clone() *Query[T] {
+    var clone = *q
+    return &clone
 }
 
 func (q *Query[T]) TableInterface() Table {
@@ -102,7 +104,7 @@ func (q *Query[T]) readDB() *sql.DB {
         return q.writeDB()
     }
 }
-func (q *Query[T]) dbTx() *sql.Tx {
+func (q *Query[T]) Tx() *sql.Tx {
     return q.tx
 }
 
@@ -357,9 +359,4 @@ func (q *Query[T]) getOrderAndLimitSqlStr() string {
     }
 
     return strings.Join(ret, " ")
-}
-
-func (q *Query[T]) currentFilename() string {
-    _, fs, _, _ := runtime.Caller(2)
-    return fs
 }

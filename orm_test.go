@@ -7,6 +7,11 @@ import (
     "time"
 )
 
+var tdb, _ = orm.OpenMysql("rfamro@tcp(mysql-rfam-public.ebi.ac.uk:4497)/Rfam?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
+
+var FamilyTable = new(Family)
+var FamilyQuery = orm.NewQuery(FamilyTable)
+
 type Family struct {
     RfamAcc            string    `json:"rfam_acc" orm:"rfam_acc,varchar(7),primary,unique"`
     RfamId             string    `json:"rfam_id" orm:"rfam_id,varchar(40),index"`
@@ -45,9 +50,10 @@ type Family struct {
     Updated            time.Time `json:"updated" orm:"updated,timestamp" default:"CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"`
 }
 
-func (Family) Connection() []*sql.DB {
+func (f Family) Connection() []*sql.DB {
     return []*sql.DB{tdb}
 }
+
 func (Family) TableName() string {
     return "family"
 }
@@ -56,10 +62,78 @@ func (Family) DatabaseName() string {
     return "Rfam"
 }
 
-func TestMigrate(t *testing.T) {
+func TestOrm(t *testing.T) {
     t.Run("create_struct", func(t *testing.T) {
-        err := orm.NewQuery(&Family{}).CreateStructFromTable()
+        err := orm.NewQuery(&Family{}).CreateStruct()
 
         t.Log(err)
+    })
+    t.Run("create_table", func(t *testing.T) {
+        sqlStr, err := orm.NewQuery(&Family{}).CreateTable()
+        t.Log(sqlStr)
+        t.Log(err)
+    })
+
+    t.Run("mysql_version", func(t *testing.T) {
+        var data string
+        query := FamilyQuery.Raw("select version()").GetTo(&data)
+
+        t.Log(data)
+        t.Log(query.Sql())
+        t.Log(query.Error())
+    })
+    t.Run("query_timeout", func(t *testing.T) {
+        var data map[string]int
+        query := FamilyQuery.Raw("show variables like '%timeout%'").GetTo(&data)
+
+        t.Log(data)
+        t.Log(query.Sql())
+        t.Log(query.Error())
+    })
+    t.Run("query_table_sql", func(t *testing.T) {
+        var data map[string]string
+        query := FamilyQuery.Raw("show create table " + FamilyQuery.T.TableName()).GetTo(&data)
+
+        t.Log(data)
+        t.Log(query.Sql())
+        t.Log(query.Error())
+    })
+    t.Run("count_total", func(t *testing.T) {
+        var data int64
+        query := FamilyQuery.Select("count(*)").GetTo(&data)
+        t.Log(data)
+
+        data, query = FamilyQuery.GetCount()
+        t.Log(data)
+
+        t.Log(query.Sql())
+        t.Log(query.Error())
+    })
+    t.Run("count_distinct_total", func(t *testing.T) {
+        var data int64
+        query := FamilyQuery.Select("count(distinct(type))").GetTo(&data)
+        t.Log(data)
+
+        data, query = FamilyQuery.GroupBy(&FamilyQuery.T.Type).GetCount()
+        t.Log(data)
+
+        t.Log(query.Sql())
+        t.Log(query.Error())
+    })
+    t.Run("result_to_map", func(t *testing.T) {
+        var data map[string][]string
+        query := FamilyQuery.Select(&FamilyQuery.T.Type, &FamilyQuery.T.RfamAcc).Limit(20).GetTo(&data)
+        t.Log(data)
+
+        t.Log(query.Sql())
+        t.Log(query.Error())
+    })
+    t.Run("where_primary", func(t *testing.T) {
+        data, query := FamilyQuery.WherePrimary("RF00006").Get()
+
+        t.Log(data)
+
+        t.Log(query.Sql())
+        t.Log(query.Error())
     })
 }

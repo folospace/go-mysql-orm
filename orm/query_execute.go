@@ -18,11 +18,11 @@ func (q *Query[T]) Execute() QueryResult {
 
     var res sql.Result
     var err error
-    if q.dbTx() != nil {
+    if q.Tx() != nil {
         if q.ctx != nil {
-            res, err = q.dbTx().ExecContext(*q.ctx, q.prepareSql, q.bindings...)
+            res, err = q.Tx().ExecContext(*q.ctx, q.prepareSql, q.bindings...)
         } else {
-            res, err = q.dbTx().Exec(q.prepareSql, q.bindings...)
+            res, err = q.Tx().Exec(q.prepareSql, q.bindings...)
         }
     } else {
         if q.ctx != nil {
