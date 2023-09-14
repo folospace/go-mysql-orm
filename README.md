@@ -100,10 +100,10 @@ func main() {
 
 ```go
     //subquery
-    subquery := orm.NewQuery(UserTable).Where(&UserQuery.T.Id, 1).SubQuery()
+    subquery := orm.NewQuery(UserTable).Where(&UserTable.Id, 1).SubQuery()
     
     //where in suquery
-    orm.NewQuery(UserTable).Where(&UserQuery.T.Id, orm.WhereIn, subquery).Gets()
+    orm.NewQuery(UserTable).Where(&UserTable.Id, orm.WhereIn, subquery).Gets()
     
     //insert subquery
     orm.NewQuery(UserTable).InsertSubquery(subquery, nil)
