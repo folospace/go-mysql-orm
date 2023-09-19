@@ -18,7 +18,7 @@ type User struct {
     Name string `json:"name"`
 }
 
-func (User) Connection() []*sql.DB {
+func (User) Connections() []*sql.DB {
     return []*sql.DB{db}
 }
 func (User) DatabaseName() string {

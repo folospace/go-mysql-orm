@@ -24,7 +24,7 @@ func NewSubQuery(prepareSql string, bindings ...interface{}) SubQuery {
     return SubQuery{raw: prepareSql, bindings: bindings}
 }
 
-func (m SubQuery) Connection() []*sql.DB {
+func (m SubQuery) Connections() []*sql.DB {
     return m.dbs
 }
 

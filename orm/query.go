@@ -85,7 +85,7 @@ func (q *Query[T]) DB() *sql.DB {
 
 func (q *Query[T]) DBs() []*sql.DB {
     if len(q.writeAndReadDbs) == 0 && len(q.tables) > 0 {
-        q.writeAndReadDbs = q.tables[0].table.Connection()
+        q.writeAndReadDbs = q.tables[0].table.Connections()
     }
     return q.writeAndReadDbs
 }
