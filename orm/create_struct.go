@@ -98,7 +98,11 @@ func (q *Query[T]) CreateStruct(file ...string) error {
 
     fileParts := strings.SplitN(fileContent, search, 2)
 
-    finalFileContent := fileParts[0] + search + "\n" + strings.Join(structLines, "\n") + "\n}\n" + oldStructRename + fileParts[1]
+    finalFileContent := fileParts[0] + search + "\n" + strings.Join(structLines, "\n") + "\n}\n"
+
+    if len(fileParts) > 1 {
+        finalFileContent += oldStructRename + fileParts[1]
+    }
 
     return ioutil.WriteFile(structFile, []byte(finalFileContent), 0644)
 }
