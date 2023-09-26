@@ -110,7 +110,7 @@ orm.NewQuery(UserTable).InsertSubquery(subquery, nil)
 
 //join subquery
 orm.NewQuery(UserTable).Join(subquery, func (query *orm.Query[User]) *orm.Query[User] {
-return query.Where(&UserTable.Id, orm.Raw("sub.id"))
+    return query.Where(&UserTable.Id, orm.Raw("sub.id"))
 }).Gets()
 
 ```
