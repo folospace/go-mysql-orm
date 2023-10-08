@@ -3,7 +3,7 @@ package orm
 import (
     "fmt"
     "reflect"
-    "sort"
+    "strconv"
     "strings"
     "time"
 )
@@ -159,12 +159,41 @@ func generateColumnStrings(dbColums []dBColumn) []string {
 
         if len(v.Uniques) > 0 {
             for _, v2 := range v.Uniques {
+                if strings.HasSuffix(v2, ")") {
+                    li := strings.LastIndex(v2, "(")
+                    if li > 0 {
+                        numStr := v2[li+1 : len(v2)-1]
+                        num, numErr := strconv.Atoi(numStr)
+                        if numErr == nil {
+                            if uniqueComps[v2[:li]] == nil {
+                                uniqueComps[v2[:li]] = make([]string, 16)
+                            }
+                            uniqueComps[v2[:li]][num] = v.Name
+                            continue
+                        }
+                    }
+                }
                 uniqueComps[v2] = append(uniqueComps[v2], v.Name)
+
             }
         }
 
         if len(v.Indexs) > 0 {
             for _, v2 := range v.Indexs {
+                if strings.HasSuffix(v2, ")") {
+                    li := strings.LastIndex(v2, "(")
+                    if li > 0 {
+                        numStr := v2[li+1 : len(v2)-1]
+                        num, numErr := strconv.Atoi(numStr)
+                        if numErr == nil {
+                            if indexComps[v2[:li]] == nil {
+                                indexComps[v2[:li]] = make([]string, 16)
+                            }
+                            indexComps[v2[:li]][num] = v.Name
+                            continue
+                        }
+                    }
+                }
                 indexComps[v2] = append(indexComps[v2], v.Name)
             }
         }
@@ -181,16 +210,22 @@ func generateColumnStrings(dbColums []dBColumn) []string {
         ret = append(ret, v)
     }
     for k, v := range uniqueComps {
-        sort.SliceStable(v, func(i, j int) bool {
-            return strings.Index(k, v[i]) < strings.Index(k, v[j])
-        })
-        ret = append(ret, fmt.Sprintf("unique key `%s` (%s)", k, "`"+strings.Join(v, "`,`")+"`"))
+        var newv []string
+        for _, v2 := range v {
+            if v2 != "" {
+                newv = append(newv, v2)
+            }
+        }
+        ret = append(ret, fmt.Sprintf("unique key `%s` (%s)", k, "`"+strings.Join(newv, "`,`")+"`"))
     }
     for k, v := range indexComps {
-        sort.SliceStable(v, func(i, j int) bool {
-            return strings.Index(k, v[i]) < strings.Index(k, v[j])
-        })
-        ret = append(ret, fmt.Sprintf("key `%s` (%s)", k, "`"+strings.Join(v, "`,`")+"`"))
+        var newv []string
+        for _, v2 := range v {
+            if v2 != "" {
+                newv = append(newv, v2)
+            }
+        }
+        ret = append(ret, fmt.Sprintf("key `%s` (%s)", k, "`"+strings.Join(newv, "`,`")+"`"))
     }
     return ret
 }

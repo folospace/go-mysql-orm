@@ -8,6 +8,7 @@ import (
     "reflect"
     "regexp"
     "runtime"
+    "strconv"
     "strings"
     "time"
 )
@@ -188,16 +189,16 @@ func getTableDbColumns[T Table](query *Query[T]) ([]dBColumn, error) {
             keyName := strings.Trim(keyNameAndCols[0], "`")
             cols := strings.Split(strings.Trim(keyNameAndCols[1], "()"), ",")
 
-            if len(cols) == 1 {
-                colName := strings.Trim(cols[0], "`")
-                ret[existColumn[colName]].Unique = true
-            } else {
-                if strings.HasPrefix(keyName, "unique_") == false {
-                    keyName = "unique_" + keyName
-                }
-                for _, v2 := range cols {
-                    colName := strings.Trim(v2, "`")
-
+            if len(cols) == 1 && cols[0] == keyNameAndCols[0] {
+                keyName = "unique"
+            } else if strings.HasPrefix(keyName, "unique_") == false {
+                keyName = "unique_" + keyName
+            }
+            for k2, v2 := range cols {
+                colName := strings.Trim(v2, "`")
+                if len(cols) > 1 {
+                    ret[existColumn[colName]].Uniques = append(ret[existColumn[colName]].Uniques, keyName+"("+strconv.Itoa(k2)+")")
+                } else {
                     ret[existColumn[colName]].Uniques = append(ret[existColumn[colName]].Uniques, keyName)
                 }
             }
@@ -211,16 +212,17 @@ func getTableDbColumns[T Table](query *Query[T]) ([]dBColumn, error) {
             keyName := strings.Trim(keyNameAndCols[0], "`")
             cols := strings.Split(strings.Trim(keyNameAndCols[1], "()"), ",")
 
-            if len(cols) == 1 {
-                colName := strings.Trim(cols[0], "`")
-                ret[existColumn[colName]].Index = true
-            } else {
-                if strings.HasPrefix(keyName, "index_") == false {
-                    keyName = "index_" + keyName
-                }
-                for _, v2 := range cols {
-                    colName := strings.Trim(v2, "`")
+            if len(cols) == 1 && cols[0] == keyNameAndCols[0] {
+                keyName = "index"
+            } else if strings.HasPrefix(keyName, "index_") == false {
+                keyName = "index_" + keyName
+            }
+            for k2, v2 := range cols {
+                colName := strings.Trim(v2, "`")
 
+                if len(cols) > 1 {
+                    ret[existColumn[colName]].Indexs = append(ret[existColumn[colName]].Indexs, keyName+"("+strconv.Itoa(k2)+")")
+                } else {
                     ret[existColumn[colName]].Indexs = append(ret[existColumn[colName]].Indexs, keyName)
                 }
             }
