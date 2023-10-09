@@ -190,9 +190,9 @@ func getTableDbColumns[T Table](query *Query[T]) ([]dBColumn, error) {
             cols := strings.Split(strings.Trim(keyNameAndCols[1], "()"), ",")
 
             if len(cols) == 1 && cols[0] == keyNameAndCols[0] {
-                keyName = "unique"
-            } else if strings.HasPrefix(keyName, "unique_") == false {
-                keyName = "unique_" + keyName
+                keyName = uniqueKeyPrefix
+            } else {
+                keyName = uniqueKeyPrefix + "_" + keyName
             }
             for k2, v2 := range cols {
                 colName := strings.Trim(v2, "`")
@@ -213,9 +213,9 @@ func getTableDbColumns[T Table](query *Query[T]) ([]dBColumn, error) {
             cols := strings.Split(strings.Trim(keyNameAndCols[1], "()"), ",")
 
             if len(cols) == 1 && cols[0] == keyNameAndCols[0] {
-                keyName = "index"
-            } else if strings.HasPrefix(keyName, "index_") == false {
-                keyName = "index_" + keyName
+                keyName = keyPrefix
+            } else {
+                keyName = keyPrefix + "_" + keyName
             }
             for k2, v2 := range cols {
                 colName := strings.Trim(v2, "`")

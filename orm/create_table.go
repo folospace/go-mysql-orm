@@ -312,13 +312,13 @@ func getMigrateColumns(table *queryTable) []dBColumn {
                     if v == uniqueKeyPrefix {
                         column.Unique = true
                     } else {
-                        column.Uniques = append(column.Uniques, v)
+                        column.Uniques = append(column.Uniques, strings.TrimPrefix(v, uniqueKeyPrefix+"_"))
                     }
                 } else if strings.HasPrefix(v, keyPrefix) {
                     if v == keyPrefix {
                         column.Index = true
                     } else {
-                        column.Indexs = append(column.Indexs, v)
+                        column.Indexs = append(column.Indexs, strings.TrimPrefix(v, keyPrefix+"_"))
                     }
                 } else {
                     overideColumn.Type = v
