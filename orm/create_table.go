@@ -159,18 +159,16 @@ func generateColumnStrings(dbColums []dBColumn) []string {
 
         if len(v.Uniques) > 0 {
             for _, v2 := range v.Uniques {
-                if strings.HasSuffix(v2, ")") {
-                    li := strings.LastIndex(v2, "(")
-                    if li > 0 {
-                        numStr := v2[li+1 : len(v2)-1]
-                        num, numErr := strconv.Atoi(numStr)
-                        if numErr == nil {
-                            if uniqueComps[v2[:li]] == nil {
-                                uniqueComps[v2[:li]] = make([]string, 16)
-                            }
-                            uniqueComps[v2[:li]][num] = v.Name
-                            continue
+                li := strings.LastIndex(v2, ":")
+                if li > 0 {
+                    numStr := v2[li+1:]
+                    num, numErr := strconv.Atoi(numStr)
+                    if numErr == nil {
+                        if uniqueComps[v2[:li]] == nil {
+                            uniqueComps[v2[:li]] = make([]string, 16)
                         }
+                        uniqueComps[v2[:li]][num] = v.Name
+                        continue
                     }
                 }
                 uniqueComps[v2] = append(uniqueComps[v2], v.Name)
@@ -180,18 +178,16 @@ func generateColumnStrings(dbColums []dBColumn) []string {
 
         if len(v.Indexs) > 0 {
             for _, v2 := range v.Indexs {
-                if strings.HasSuffix(v2, ")") {
-                    li := strings.LastIndex(v2, "(")
-                    if li > 0 {
-                        numStr := v2[li+1 : len(v2)-1]
-                        num, numErr := strconv.Atoi(numStr)
-                        if numErr == nil {
-                            if indexComps[v2[:li]] == nil {
-                                indexComps[v2[:li]] = make([]string, 16)
-                            }
-                            indexComps[v2[:li]][num] = v.Name
-                            continue
+                li := strings.LastIndex(v2, ":")
+                if li > 0 {
+                    numStr := v2[li+1:]
+                    num, numErr := strconv.Atoi(numStr)
+                    if numErr == nil {
+                        if indexComps[v2[:li]] == nil {
+                            indexComps[v2[:li]] = make([]string, 16)
                         }
+                        indexComps[v2[:li]][num] = v.Name
+                        continue
                     }
                 }
                 indexComps[v2] = append(indexComps[v2], v.Name)
@@ -312,13 +308,13 @@ func getMigrateColumns(table *queryTable) []dBColumn {
                     if v == uniqueKeyPrefix {
                         column.Unique = true
                     } else {
-                        column.Uniques = append(column.Uniques, strings.TrimPrefix(v, uniqueKeyPrefix+"_"))
+                        column.Uniques = append(column.Uniques, strings.TrimPrefix(v, uniqueKeyPrefix+":"))
                     }
                 } else if strings.HasPrefix(v, keyPrefix) {
                     if v == keyPrefix {
                         column.Index = true
                     } else {
-                        column.Indexs = append(column.Indexs, strings.TrimPrefix(v, keyPrefix+"_"))
+                        column.Indexs = append(column.Indexs, strings.TrimPrefix(v, keyPrefix+":"))
                     }
                 } else {
                     overideColumn.Type = v

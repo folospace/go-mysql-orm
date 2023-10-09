@@ -192,12 +192,12 @@ func getTableDbColumns[T Table](query *Query[T]) ([]dBColumn, error) {
             if len(cols) == 1 && cols[0] == keyNameAndCols[0] {
                 keyName = uniqueKeyPrefix
             } else {
-                keyName = uniqueKeyPrefix + "_" + keyName
+                keyName = uniqueKeyPrefix + ":" + keyName
             }
             for k2, v2 := range cols {
                 colName := strings.Trim(v2, "`")
                 if len(cols) > 1 {
-                    ret[existColumn[colName]].Uniques = append(ret[existColumn[colName]].Uniques, keyName+"("+strconv.Itoa(k2)+")")
+                    ret[existColumn[colName]].Uniques = append(ret[existColumn[colName]].Uniques, keyName+":"+strconv.Itoa(k2))
                 } else {
                     ret[existColumn[colName]].Uniques = append(ret[existColumn[colName]].Uniques, keyName)
                 }
@@ -215,13 +215,13 @@ func getTableDbColumns[T Table](query *Query[T]) ([]dBColumn, error) {
             if len(cols) == 1 && cols[0] == keyNameAndCols[0] {
                 keyName = keyPrefix
             } else {
-                keyName = keyPrefix + "_" + keyName
+                keyName = keyPrefix + ":" + keyName
             }
             for k2, v2 := range cols {
                 colName := strings.Trim(v2, "`")
 
                 if len(cols) > 1 {
-                    ret[existColumn[colName]].Indexs = append(ret[existColumn[colName]].Indexs, keyName+"("+strconv.Itoa(k2)+")")
+                    ret[existColumn[colName]].Indexs = append(ret[existColumn[colName]].Indexs, keyName+":"+strconv.Itoa(k2))
                 } else {
                     ret[existColumn[colName]].Indexs = append(ret[existColumn[colName]].Indexs, keyName)
                 }
