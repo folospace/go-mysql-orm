@@ -4,7 +4,7 @@ Base on [go-sql-driver/mysql](https://github.com/go-sql-driver/mysql).
 ```go
 import (
     "database/sql"
-    "gitlab.ydjdev.com/ydjai/yorm/orm"
+    "github.com/folospace/go-mysql-orm/orm"
 )
 
 //connect mysql db
