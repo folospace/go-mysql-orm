@@ -5,10 +5,11 @@ func (q *Query[T]) Delete(primaryIds ...interface{}) QueryResult {
         q.setErr(ErrTableNotSelected)
         return q.result
     }
-    if len(primaryIds) > 0 {
-        return q.WherePrimary(primaryIds).delete()
+
+    if len(primaryIds) == 1 {
+        return q.WherePrimary(primaryIds[0]).delete()
     } else {
-        return q.delete()
+        return q.WherePrimary(primaryIds).delete()
     }
 }
 

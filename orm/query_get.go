@@ -9,7 +9,12 @@ import (
 //get first T
 func (q *Query[T]) Get(primaryIds ...interface{}) (T, QueryResult) {
     var ret T
-    res := q.WherePrimary(primaryIds).Limit(1).GetTo(&ret)
+    var res QueryResult
+    if len(primaryIds) == 1 {
+        res = q.WherePrimary(primaryIds[0]).Limit(1).GetTo(&ret)
+    } else {
+        res = q.WherePrimary(primaryIds).Limit(1).GetTo(&ret)
+    }
     return ret, res
 }
 
@@ -37,7 +42,12 @@ func (q *Query[T]) GetString() (string, QueryResult) {
 //get slice T
 func (q *Query[T]) Gets(primaryIds ...interface{}) ([]T, QueryResult) {
     var ret []T
-    res := q.WherePrimary(primaryIds).GetTo(&ret)
+    var res QueryResult
+    if len(primaryIds) == 1 {
+        res = q.WherePrimary(primaryIds[0]).GetTo(&ret)
+    } else {
+        res = q.WherePrimary(primaryIds).GetTo(&ret)
+    }
     return ret, res
 }
 
