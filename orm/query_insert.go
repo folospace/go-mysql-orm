@@ -3,26 +3,32 @@ package orm
 import (
     "errors"
     "reflect"
+    "sort"
     "strings"
 )
 
 //tableFieldPtrs: allow insert table columns
-func (q *Query[T]) Insert(data T, tableFieldPtrs ...interface{}) QueryResult {
-    return q.insert(false, []T{data}, tableFieldPtrs, nil)
+func (q *Query[T]) Insert(data T, acceptFieldPtrs ...interface{}) QueryResult {
+    return q.insert(false, []T{data}, acceptFieldPtrs, nil)
 }
 
 //tableFieldPtrs: allow insert table columns
-func (q *Query[T]) Inserts(data []T, tableFieldPtrs ...interface{}) QueryResult {
-    return q.insert(false, data, tableFieldPtrs, nil)
+func (q *Query[T]) InsertUpdate(data T, updates []UpdateColumn, acceptFieldPtrs ...interface{}) QueryResult {
+    return q.insert(true, []T{data}, acceptFieldPtrs, updates)
+}
+
+//tableFieldPtrs: allow insert table columns
+func (q *Query[T]) Inserts(data []T, acceptFieldPtrs ...interface{}) QueryResult {
+    return q.insert(false, data, acceptFieldPtrs, nil)
 }
 
 //insert ignore ... // on duplicate key update ...
-func (q *Query[T]) InsertsIgnore(data []T, updates []UpdateColumn, tableFieldPtrs ...interface{}) QueryResult {
-    return q.insert(true, data, tableFieldPtrs, updates)
+func (q *Query[T]) InsertUpdates(data []T, updates []UpdateColumn, acceptFieldPtrs ...interface{}) QueryResult {
+    return q.insert(true, data, acceptFieldPtrs, updates)
 }
 
-func (q *Query[T]) InsertSubquery(data SubQuery, updates []UpdateColumn, tableFieldPtrs ...interface{}) QueryResult {
-    return q.insert(true, data, tableFieldPtrs, updates)
+func (q *Query[T]) InsertSubquery(data *SubQuery, updates []UpdateColumn, acceptFieldPtrs ...interface{}) QueryResult {
+    return q.insert(true, data, acceptFieldPtrs, updates)
 }
 
 func (q *Query[T]) gennerateInsertSql(InsertColumns []string, rowCount int) string {
@@ -82,7 +88,7 @@ func (q *Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interf
     var err error
     isSlice := false
     isSubQuery := false
-    var subq SubQuery
+    var subq *SubQuery
     rowCount := 1
     var structFields []string
     var structDefaults map[int]interface{}
@@ -101,38 +107,45 @@ func (q *Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interf
             structDefaults, err = getStructFieldWithDefaultTime(val.Index(0).Interface())
             q.setErr(err)
         }
-    } else if val.Kind() == reflect.Struct {
-        sub, ok := data.(SubQuery)
-        if ok == false {
-            structFields, err = getStructFieldNameSlice(data)
-            q.setErr(err)
-            structDefaults, err = getStructFieldWithDefaultTime(val.Index(0).Interface())
-            q.setErr(err)
-        } else {
+    } else if val.Kind() == reflect.Ptr {
+        sub, ok := data.(*SubQuery)
+        if ok {
             isSubQuery = true
             subq = sub
+        } else {
+            q.setErr(ErrInsertPtrNotAllowed)
         }
+    } else if val.Kind() == reflect.Struct {
+        structFields, err = getStructFieldNameSlice(data)
+        q.setErr(err)
+        structDefaults, err = getStructFieldWithDefaultTime(val.Index(0).Interface())
+        q.setErr(err)
     } else {
         q.setErr(errors.New("data must be struct or slice of struct"))
     }
 
     if q.result.Err != nil {
+        if errorLogger != nil {
+            errorLogger.Error(q.result.Sql(), q.result.Error())
+        }
         return q.result
+    } else if infoLogger != nil {
+        infoLogger.Info(q.result.Sql(), q.result.Error())
     }
 
-    var validFieldNameMap = make(map[string]struct{})
+    var validFieldNameMap = make(map[string]int)
     var validFieldNames = make([]string, 0)
     var validFieldIndex = make(map[int]struct{})
     var InsertColumns []string //actually insert columns
-    var allowFields = make(map[interface{}]struct{})
+    var allowFields = make(map[interface{}]int)
 
-    for _, v := range tableFieldPtrs {
-        allowFields[v] = struct{}{}
+    for k, v := range tableFieldPtrs {
+        allowFields[v] = k
     }
     for k, v := range q.tables[0].ormFields {
-        _, ok := allowFields[k]
+        pos, ok := allowFields[k]
         if ok || (len(allowFields) == 0 && isSubQuery == false) {
-            validFieldNameMap[v] = struct{}{}
+            validFieldNameMap[v] = pos
             validFieldNames = append(validFieldNames, v)
         }
     }
@@ -140,6 +153,9 @@ func (q *Query[T]) insert(ignore bool, data interface{}, tableFieldPtrs []interf
     var insertSql, updateStr string
     var bindings []interface{}
     if isSubQuery {
+        sort.SliceStable(validFieldNames, func(i, j int) bool {
+            return validFieldNameMap[validFieldNames[i]] < validFieldNameMap[validFieldNames[j]]
+        })
         insertSql = q.gennerateInsertSql(validFieldNames, 0)
         if insertSql != "" {
             insertSql += " "

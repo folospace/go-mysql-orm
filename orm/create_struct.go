@@ -142,7 +142,7 @@ func getSqlSegments[T Table](query *Query[T]) ([]string, error) {
     table := query.TableInterface()
     var res map[string]string
 
-    err := query.Raw("show create table " + table.TableName()).GetTo(&res).Err
+    err := query.Raw("show create table " + "`" + table.TableName() + "`").GetTo(&res).Err
     if err != nil {
         return nil, err
     }

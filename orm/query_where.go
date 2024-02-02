@@ -79,7 +79,7 @@ func (q *Query[T]) where(isOr bool, column interface{}, vals ...interface{}) *Qu
             }
             raw = c + " " + operator + value
         } else {
-            tempTable, ok := val.(SubQuery)
+            tempTable, ok := val.(*SubQuery)
             if ok {
                 if operator != "" {
                     operator += " "
@@ -192,6 +192,18 @@ func (q *Query[T]) OrWherePrimary(operator interface{}, vals ...interface{}) *Qu
     }
 
     return q.where(true, q.tables[0].tableStruct.Field(0).Addr().Interface(), operator, vals[0])
+}
+
+func (q *Query[T]) WhereBetween(column interface{}, valLess, valGreat interface{}) *Query[T] {
+    return q.WhereFunc(func(query *Query[T]) *Query[T] {
+        return query.where(false, column, WhereGreaterOrEqual, valLess).where(false, column, WhereLessOrEqual, valGreat)
+    })
+}
+
+func (q *Query[T]) OrWhereBetween(column interface{}, valLess, valGreat interface{}) *Query[T] {
+    return q.OrWhereFunc(func(query *Query[T]) *Query[T] {
+        return query.where(false, column, WhereGreaterOrEqual, valLess).where(false, column, WhereLessOrEqual, valGreat)
+    })
 }
 
 //"id=1"

@@ -13,6 +13,27 @@ func (q *Query[T]) Get(primaryIds ...interface{}) (T, QueryResult) {
     return ret, res
 }
 
+//get first bool
+func (q *Query[T]) GetBool() (bool, QueryResult) {
+    var ret bool
+    res := q.Limit(1).GetTo(&ret)
+    return ret, res
+}
+
+//get first int
+func (q *Query[T]) GetInt() (int64, QueryResult) {
+    var ret int64
+    res := q.Limit(1).GetTo(&ret)
+    return ret, res
+}
+
+//get first string
+func (q *Query[T]) GetString() (string, QueryResult) {
+    var ret string
+    res := q.Limit(1).GetTo(&ret)
+    return ret, res
+}
+
 //get slice T
 func (q *Query[T]) Gets(primaryIds ...interface{}) ([]T, QueryResult) {
     var ret []T
@@ -56,7 +77,7 @@ func (q *Query[T]) GetCount() (int64, QueryResult) {
     } else {
         tempTable := q.SubQuery()
 
-        newQuery := NewQuery(&tempTable, tempTable.dbs...)
+        newQuery := NewQuery(tempTable, tempTable.dbs...)
 
         res := newQuery.setErr(tempTable.err).Select("count(*)").GetTo(&ret)
         return ret, res
@@ -79,7 +100,12 @@ func (q *Query[T]) GetTo(destPtr interface{}) QueryResult {
     }
 
     if q.result.Err != nil {
+        if errorLogger != nil {
+            errorLogger.Error(q.result.Sql(), q.result.Error())
+        }
         return q.result
+    } else if infoLogger != nil {
+        infoLogger.Info(q.result.Sql(), q.result.Error())
     }
 
     var rows *sql.Rows
@@ -106,6 +132,9 @@ func (q *Query[T]) GetTo(destPtr interface{}) QueryResult {
 
     if err != nil {
         q.result.Err = err
+        if errorLogger != nil {
+            errorLogger.Error(q.result.Sql(), q.result.Error())
+        }
         return q.result
     }
 
@@ -140,6 +169,8 @@ func (q *Query[T]) scanValues(basePtrs []interface{}, rowColumns []string, rows 
         }
 
         err = rows.Scan(finalPtrs...)
+        q.result.RowsAffected += 1
+
         if setVal != nil {
             setVal()
         }

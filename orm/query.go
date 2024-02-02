@@ -29,9 +29,9 @@ type Query[T Table] struct {
     bindings        []interface{}
     groupBy         []interface{}
     having          []where
-    unions          []SubQuery
-    withCtes        []SubQuery
-    windows         []SubQuery
+    unions          []*SubQuery
+    withCtes        []*SubQuery
+    windows         []*SubQuery
     self            *Query[SubQuery]
     selectTimeout   string
 }
@@ -39,21 +39,16 @@ type Query[T Table] struct {
 //query table[struct] generics
 func NewQuery[T Table](t *T, writeAndReadDbs ...*sql.DB) *Query[T] {
     q := Query[T]{T: t, writeAndReadDbs: writeAndReadDbs}
-    return q.FromTable(q.TableInterface())
+    return q.fromTable(q.TableInterface())
 }
 
 //query raw, tablename can be empty
-func NewQueryRaw(tableName string, writeAndReadDbs ...*sql.DB) *Query[SubQuery] {
+func newQueryRaw(tableName string, writeAndReadDbs ...*sql.DB) *Query[SubQuery] {
     sq := &SubQuery{}
     if tableName != "" {
         sq.tableName = tableName
     }
     return NewQuery(sq, writeAndReadDbs...)
-}
-
-//query from subquery
-func NewQuerySub(subquery SubQuery) *Query[SubQuery] {
-    return NewQuery(&subquery, subquery.dbs...)
 }
 
 func (q *Query[T]) Clone() *Query[T] {
@@ -67,6 +62,10 @@ func (q *Query[T]) TableInterface() Table {
 
 func (q *Query[T]) AllCols() string {
     return q.tables[0].getAliasOrTableName() + ".*"
+}
+
+func (q *Query[T]) AllColInterfaces() map[interface{}]string {
+    return q.tables[0].ormFields
 }
 
 func (q *Query[T]) UseDB(db ...*sql.DB) *Query[T] {
@@ -108,7 +107,7 @@ func (q *Query[T]) Tx() *sql.Tx {
     return q.tx
 }
 
-func (q *Query[T]) FromTable(table Table, alias ...string) *Query[T] {
+func (q *Query[T]) fromTable(table Table, alias ...string) *Query[T] {
     q.tables = nil
     q.wheres = nil
     q.orderbys = nil
@@ -259,7 +258,7 @@ func (q *Query[T]) parseColumn(v interface{}) (string, error) {
 
 func (q *Query[T]) getTableColumn(i reflect.Value) (*queryTable, string) {
     for _, t := range q.tables {
-        if i.Interface() == t.table {
+        if i.Interface() == t.table || (i.Elem().CanInterface() && i.Elem().Interface() == t.table) {
             return t, ""
         }
         if s, exist := t.ormFields[i.Elem().Addr().Interface()]; exist {

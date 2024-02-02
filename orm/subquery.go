@@ -20,10 +20,6 @@ type SubQuery struct {
     unionAll  bool
 }
 
-func NewSubQuery(prepareSql string, bindings ...interface{}) SubQuery {
-    return SubQuery{raw: prepareSql, bindings: bindings}
-}
-
 func (m SubQuery) Connections() []*sql.DB {
     return m.dbs
 }

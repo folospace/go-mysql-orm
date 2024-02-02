@@ -64,7 +64,7 @@ func (q *Query[T]) CreateTable() (string, error) {
         retSql := ""
         var err error
         for _, v := range extraStrs {
-            tempSql := "ALTER TABLE " + q.TableInterface().TableName() + " ADD " + v
+            tempSql := "ALTER TABLE " + "`" + q.TableInterface().TableName() + "`" + " ADD " + v
 
             retSql += tempSql + "\n"
             _, err = db.Exec(tempSql)
@@ -278,8 +278,8 @@ func getMigrateColumns(table *queryTable) []dBColumn {
             column.Default = "Null"
         }
 
-        column.Comment = table.getTags(i, "comment")[0]
-        customDefault := table.getTags(i, "default")[0]
+        column.Comment = table.getTag(i, "comment")
+        customDefault := table.getTag(i, "default")
         if customDefault != "" {
             column.Default = customDefault
             if kind == reflect.Bool {

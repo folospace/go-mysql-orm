@@ -26,6 +26,18 @@ func (q *Query[T]) SelectRankDesc(column interface{}, alias string) *Query[T] {
     }, alias)
 }
 
+func (q *Query[T]) SelectRowNumber(column interface{}, alias string) *Query[T] {
+    return q.SelectOver("row_number()", func(query *Query[T]) *Query[T] {
+        return query.OrderBy(column)
+    }, alias)
+}
+
+func (q *Query[T]) SelectRowNumberDesc(column interface{}, alias string) *Query[T] {
+    return q.SelectOver("row_number()", func(query *Query[T]) *Query[T] {
+        return query.OrderByDesc(column)
+    }, alias)
+}
+
 func (q *Query[T]) SelectOver(windowFunc string, f func(query *Query[T]) *Query[T], alias string) *Query[T] {
     partitionStart := len(q.partitionbys)
     orderStart := len(q.orderbys)

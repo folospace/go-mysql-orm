@@ -15,7 +15,7 @@ func (q *Query[T]) WithParentsOnColumn(pidColumn interface{}) *Query[T] {
     coln := strings.Split(col, ".")
     newcol := strings.Trim(coln[len(coln)-1], "`")
 
-    cte := NewQueryRaw(tempName, q.DBs()...)
+    cte := newQueryRaw(tempName, q.DBs()...)
 
     appendQuery := NewQuery(q.T, q.DBs()...)
     appendQuery = appendQuery.Join(cte.T, func(query *Query[T]) *Query[T] {
@@ -43,7 +43,7 @@ func (q *Query[T]) WithChildrenOnColumn(pidColumn interface{}) *Query[T] {
     coln := strings.Split(col, ".")
     newcol := strings.Trim(coln[len(coln)-1], "`")
 
-    cte := NewQueryRaw(tempName, q.DBs()...)
+    cte := newQueryRaw(tempName, q.DBs()...)
 
     appendQuery := NewQuery(q.T, q.DBs()...)
     appendQuery = appendQuery.Join(cte.T, func(query *Query[T]) *Query[T] {
@@ -54,15 +54,15 @@ func (q *Query[T]) WithChildrenOnColumn(pidColumn interface{}) *Query[T] {
     return q.UnionAll(appendQuery.SubQuery())
 }
 
-func (q *Query[T]) WithCte(subquery SubQuery, cteName string, columns ...string) *Query[T] {
+func (q *Query[T]) WithCte(subquery *SubQuery, cteName string, columns ...string) *Query[T] {
     return q.withCte(subquery, cteName, false, columns...)
 }
 
-func (q *Query[T]) WithRecursiveCte(subquery SubQuery, cteName string, columns ...string) *Query[T] {
+func (q *Query[T]) WithRecursiveCte(subquery *SubQuery, cteName string, columns ...string) *Query[T] {
     return q.withCte(subquery, cteName, true, columns...)
 }
 
-func (q *Query[T]) withCte(subquery SubQuery, cteName string, recursive bool, columns ...string) *Query[T] {
+func (q *Query[T]) withCte(subquery *SubQuery, cteName string, recursive bool, columns ...string) *Query[T] {
     subquery.tableName = cteName
     subquery.recursive = recursive
     subquery.columns = columns
