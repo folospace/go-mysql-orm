@@ -5,8 +5,8 @@ import (
     "strings"
 )
 
-func (q *Query[T]) WithParentsOnColumn(pidColumn interface{}) *Query[T] {
-    tempName := q.TableInterface().TableName() + "_cte"
+func (q *Query[T]) WithParentsOnColumn(pidColumn any) *Query[T] {
+    tempName := q.tableInterface().TableName() + "_cte"
 
     col, err := q.parseColumn(pidColumn)
     if err != nil {
@@ -20,21 +20,21 @@ func (q *Query[T]) WithParentsOnColumn(pidColumn interface{}) *Query[T] {
     appendQuery := NewQuery(q.T, q.DBs()...)
     appendQuery = appendQuery.Join(cte.T, func(query *Query[T]) *Query[T] {
         return query.Where(appendQuery.tables[0].tableStruct.Field(0).Addr().Interface(), Raw(tempName+"."+newcol))
-    }).Select(appendQuery.AllCols())
+    }).Select(appendQuery.allCols())
 
     q.self = cte
     return q.UnionAll(appendQuery.SubQuery())
 }
 
-func (q *Query[T]) WithChildrenOnColumn(pidColumn interface{}) *Query[T] {
-    tempName := q.TableInterface().TableName() + "_cte"
+func (q *Query[T]) WithChildrenOnColumn(pidColumn any) *Query[T] {
+    tempName := q.tableInterface().TableName() + "_cte"
 
     pcol, err := q.parseColumn(pidColumn)
     if err != nil {
         return q.setErr(err)
     }
     if strings.Contains(pcol, ".") == false {
-        pcol = q.TableInterface().TableName() + "." + pcol
+        pcol = q.tableInterface().TableName() + "." + pcol
     }
     col, err := q.parseColumn(q.tables[0].tableStruct.Field(0).Addr().Interface())
     if err != nil {
@@ -48,7 +48,7 @@ func (q *Query[T]) WithChildrenOnColumn(pidColumn interface{}) *Query[T] {
     appendQuery := NewQuery(q.T, q.DBs()...)
     appendQuery = appendQuery.Join(cte.T, func(query *Query[T]) *Query[T] {
         return query.Where(pcol, Raw(tempName+"."+newcol))
-    }).Select(appendQuery.AllCols())
+    }).Select(appendQuery.allCols())
 
     q.self = cte
     return q.UnionAll(appendQuery.SubQuery())

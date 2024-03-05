@@ -1,11 +1,11 @@
 package orm
 
 type InfoLogger interface {
-    Info(args ...interface{})
+    Info(args ...any)
 }
 
 type ErrorLogger interface {
-    Error(args ...interface{})
+    Error(args ...any)
 }
 
 var infoLogger InfoLogger
@@ -20,4 +20,3 @@ func SetErrorLogger(l ErrorLogger) {
     errorLogger = l
     errorLogger.Error("set error logger")
 }
-

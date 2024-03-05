@@ -1,19 +1,59 @@
 package orm
 
 import (
+    "errors"
     "reflect"
     "strings"
 )
 
-func (q *Query[T]) Update(column interface{}, val interface{}) QueryResult {
-    return q.Updates(UpdateColumn{
-        Column: column,
-        Val:    val,
-    })
+func (q *Query[T]) Update(column any, val any, columnVars ...any) QueryResult {
+
+    var updates = []updateColumn{{col: column, val: val}}
+
+    if len(columnVars) > 0 {
+        for k := range columnVars {
+            if k%2 != 0 {
+                updates = append(updates, updateColumn{col: columnVars[k-1], val: columnVars[k]})
+            }
+        }
+    }
+
+    return q.updates(updates...)
 }
 
-func (q *Query[T]) Updates(updates ...UpdateColumn) QueryResult {
-    bindings := make([]interface{}, 0)
+func (q *Query[T]) Updates(columnVars map[any]any) QueryResult {
+    var updates = make([]updateColumn, len(columnVars))
+    var i = 0
+    for k := range columnVars {
+        updates[i] = updateColumn{col: k, val: columnVars[k]}
+        i++
+    }
+    return q.updates(updates...)
+}
+
+func (q *Query[T]) genUpdates(vals ...any) ([]updateColumn, error) {
+    if len(vals)%2 != 0 {
+        return nil, errors.New("update column and val should be pairs")
+    }
+
+    var updates []updateColumn
+
+    for k := range vals {
+        if k%2 != 0 {
+            continue
+        }
+        updates = append(updates, updateColumn{col: vals[k], val: vals[k+1]})
+    }
+
+    return updates, nil
+}
+
+func (q *Query[T]) updates(updates ...updateColumn) QueryResult {
+    bindings := make([]any, 0)
+
+    if len(q.wheres) == 0 && len(q.tables) <= 1 {
+        q.setErr(ErrUpdateWithoutCondition)
+    }
 
     tableStr := q.generateTableAndJoinStr(q.tables, &bindings)
 
@@ -41,25 +81,25 @@ func (q *Query[T]) Updates(updates ...UpdateColumn) QueryResult {
     return q.Execute()
 }
 
-func (q *Query[T]) generateUpdateStr(updates []UpdateColumn, bindings *[]interface{}) string {
+func (q *Query[T]) generateUpdateStr(updates []updateColumn, bindings *[]any) string {
     var updateStrs []string
     for _, v := range updates {
         var temp string
-        column, err := q.parseColumn(v.Column)
+        column, err := q.parseColumn(v.col)
         if err != nil {
             q.setErr(err)
             return ""
         }
 
-        val, ok := q.isRaw(v.Val)
+        val, ok := q.isRaw(v.val)
         if ok {
             temp = column + " = " + val
-        } else if reflect.ValueOf(v.Val).Kind() == reflect.Ptr {
-            if v.Val == v.Column {
+        } else if reflect.ValueOf(v.val).Kind() == reflect.Ptr {
+            if v.val == v.col {
                 dotIndex := strings.LastIndex(column, ".")
                 temp = column + " = values(" + strings.Trim(column[dotIndex+1:], "`") + ")"
             } else {
-                targetColumn, err := q.parseColumn(v.Val)
+                targetColumn, err := q.parseColumn(v.val)
                 if err != nil {
                     q.setErr(err)
                     return ""
@@ -68,7 +108,7 @@ func (q *Query[T]) generateUpdateStr(updates []UpdateColumn, bindings *[]interfa
             }
         } else {
             temp = column + " = ?"
-            *bindings = append(*bindings, v.Val)
+            *bindings = append(*bindings, v.val)
         }
         updateStrs = append(updateStrs, temp)
     }

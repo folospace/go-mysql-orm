@@ -9,7 +9,7 @@ const subqueryDefaultName = "sub"
 
 type SubQuery struct {
     raw       string
-    bindings  []interface{}
+    bindings  []any
     recursive bool
     dbName    string
     tableName string

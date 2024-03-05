@@ -1,6 +1,6 @@
 package orm
 
-func (q *Query[T]) Delete(primaryIds ...interface{}) QueryResult {
+func (q *Query[T]) Delete(primaryIds ...any) QueryResult {
     if len(q.tables) == 0 {
         q.setErr(ErrTableNotSelected)
         return q.result
@@ -14,7 +14,11 @@ func (q *Query[T]) Delete(primaryIds ...interface{}) QueryResult {
 }
 
 func (q *Query[T]) delete() QueryResult {
-    bindings := make([]interface{}, 0)
+    bindings := make([]any, 0)
+
+    if len(q.wheres) == 0 && len(q.tables) <= 1 {
+        q.setErr(ErrDeleteWithoutCondition)
+    }
 
     tableStr := q.generateTableAndJoinStr(q.tables, &bindings)
 

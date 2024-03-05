@@ -20,7 +20,7 @@ var findNotNullRegex = regexp.MustCompile("(.+) NOT NULL")
 var findNullRegex = regexp.MustCompile("(.+) NULL")
 
 func (q *Query[T]) CreateStruct(file ...string) error {
-    table := q.TableInterface()
+    table := q.tableInterface()
     dbColumns, err := getTableDbColumns(q)
     if err != nil {
         return err
@@ -139,7 +139,7 @@ func getStructFieldTypeStringByDBType(dbType string) string {
 }
 
 func getSqlSegments[T Table](query *Query[T]) ([]string, error) {
-    table := query.TableInterface()
+    table := query.tableInterface()
     var res map[string]string
 
     err := query.Raw("show create table " + "`" + table.TableName() + "`").GetTo(&res).Err

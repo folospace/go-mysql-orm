@@ -49,18 +49,18 @@ type Family struct {
     Updated            time.Time `json:"updated" orm:"updated,timestamp" default:"CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"`
 }
 
-func (f Family) Connections() []*sql.DB {
+func (f *Family) Connections() []*sql.DB {
     return []*sql.DB{tdb}
 }
 
-func (Family) TableName() string {
+func (*Family) TableName() string {
     return "family"
 }
 
-func (Family) DatabaseName() string {
+func (*Family) DatabaseName() string {
     return "Rfam"
 }
-func (f *Family) Query() *orm.Query[Family] {
+func (f *Family) Query() *orm.Query[*Family] {
     return orm.NewQuery(f)
 }
 

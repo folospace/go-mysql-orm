@@ -8,7 +8,6 @@ import (
 )
 
 
-
 //connect mysql db
 var db, _ = orm.OpenMysql("user:password@tcp(127.0.0.1:3306)/mydb?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
 
@@ -20,17 +19,17 @@ type User struct {
     Name string `json:"name"`
 }
 
-func (User) Connections() []*sql.DB {
+func (*User) Connections() []*sql.DB {
     return []*sql.DB{db}
 }
-func (User) DatabaseName() string {
+func (*User) DatabaseName() string {
     return "mydb"
 }
-func (User) TableName() string {
+func (*User) TableName() string {
     return "user"
 }
-func (u *User) Query() *orm.Query[User] {
-    return orm.NewQuery(u)
+func (u *User) Query() *orm.Query[*User] {
+    return orm.NewQuery(UserTable).WherePrimaryIfNotZero(u.Id)
 }
 
 func main() {
@@ -40,19 +39,25 @@ func main() {
     //create struct from db table
     UserTable.Query().CreateStruct() 
 
-    //select * from user where id in (1,2,3)
-    users, query = UserTable.Query().Gets(1, 2, 3)
+    //insert one user
+    UserTable.Query().Insert(&User{Name:"john"})
+    
+    //get user id = 1
+    user, _ := UserTable.Query().Get(1)
+    
+    //update user name
+    user.Query().Update(&UserTable.Name, "john 2")
 }
 ```
 
 ## select
 
 ```go
-    //get first user (name='join') as struct
-    user, query := UserTable.Query().Where(&UserTable.Name, "john").Get()
+    //get users where name='join'
+    users, _ := UserTable.Query().Where(&UserTable.Name, "john").Gets()
     
     //get users count(*)
-    count, query := UserTable.Query().GetCount()
+    count, _ := UserTable.Query().GetCount()
     
     //get user names map key by id
     var userNameKeyById map[int]string
@@ -60,7 +65,7 @@ func main() {
     
     //get users map key by name
     //useful when find has-many relations
-    var usersMapkeyByName map[string][]User
+    var usersMapkeyByName map[string][]*User
     UserTable.Query().Select(&UserTable.Name, UserTable).GetTo(&usersMapkeyByName)
     
 ```
@@ -69,13 +74,13 @@ func main() {
 
 ```go
     //update user set name="hello" where id = 1
-    UserTable.Query().WherePrimary(1).Update(&UserTable.Name, "hello")
+    UserTable.Query().WherePrimary(1).Update(&UserTable.Name, "john 2")
     
     //query delete
     UserTable.Query().Delete(1, 2, 3)
     
     //query insert
-    _ = UserTable.Query().Insert(User{Name: "han"}).LastInsertId //insert one row and get id
+    _ = UserTable.Query().Insert(&User{Name: "han"}).LastInsertId //insert one row and get id
 
 ```
 
@@ -83,7 +88,7 @@ func main() {
 
 ```go
     //query join 
-    UserTable.Query().Join(OrderTable, func (query *orm.Query[User]) *orm.Query[User] {
+    UserTable.Query().Join(OrderTable, func (query *orm.Query[*User]) *orm.Query[*User] {
             return query.Where(&UserTable.Id, &OrderTable.UserId)
     }).Select(UserTable).Gets()
 ```
@@ -92,8 +97,8 @@ func main() {
 
 ```go
     //transaction
-    _ = UserTable.Query().Transaction(func (query *orm.Query[User]) error {
-        newId := query.Insert(User{Name: "john"}).LastInsertId //insert
+    _ = UserTable.Query().Transaction(func (query *orm.Query[*User]) error {
+        newId := query.Insert(&User{Name: "john"}).LastInsertId //insert
         //newId := orm.NewQuery(UserTable).UseTx(query.Tx()).Insert(User{Name: "john"}).LastInsertId
         fmt.Println(newId)
         return errors.New("I want rollback") //rollback
@@ -110,10 +115,10 @@ func main() {
     UserTable.Query().Where(&UserTable.Id, orm.WhereIn, subquery).Gets()
     
     //insert subquery
-    UserTable.Query().InsertSubquery(subquery, nil)
+    UserTable.Query().InsertSubquery(subquery)
     
     //join subquery
-    UserTable.Query().Join(subquery, func (query *orm.Query[User]) *orm.Query[User] {
+    UserTable.Query().Join(subquery, func (query *orm.Query[*User]) *orm.Query[*User] {
         return query.Where(&UserTable.Id, orm.Raw("sub.id"))
     }).Gets()
     

@@ -32,6 +32,15 @@ func (q *Query[T]) join(joinType JoinType, table Table, wheref func(*Query[T]) *
         return q.setErr(err)
     }
 
+    //join self
+    for k := range q.tables {
+        if q.tables[k] == newTable {
+            var tmp = *newTable
+            newTable = &(tmp)
+            break
+        }
+    }
+
     if len(alias) > 0 {
         newTable.alias = alias[0]
     } else if newTable.rawSql != "" {
@@ -44,7 +53,7 @@ func (q *Query[T]) join(joinType JoinType, table Table, wheref func(*Query[T]) *
     return q.setErr(err)
 }
 
-func (q *Query[T]) generateTableAndJoinStr(tables []*queryTable, bindings *[]interface{}) string {
+func (q *Query[T]) generateTableAndJoinStr(tables []*queryTable, bindings *[]any) string {
     if len(tables) == 0 {
         return ""
     }

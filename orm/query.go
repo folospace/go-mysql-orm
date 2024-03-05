@@ -23,49 +23,30 @@ type Query[T Table] struct {
     partitionbys    []string
     orderbys        []string
     forUpdate       SelectForUpdateType
-    T               *T
-    columns         []interface{}
+    T               T
+    columns         []any
+    insertIgnore    bool
+    conflictUpdates []updateColumn
     prepareSql      string
-    bindings        []interface{}
-    groupBy         []interface{}
+    bindings        []any
+    groupBy         []any
     having          []where
     unions          []*SubQuery
     withCtes        []*SubQuery
     windows         []*SubQuery
-    self            *Query[SubQuery]
+    self            *Query[*SubQuery]
     selectTimeout   string
 }
 
 //query table[struct] generics
-func NewQuery[T Table](t *T, writeAndReadDbs ...*sql.DB) *Query[T] {
+func NewQuery[T Table](t T, writeAndReadDbs ...*sql.DB) *Query[T] {
     q := Query[T]{T: t, writeAndReadDbs: writeAndReadDbs}
-    return q.fromTable(q.TableInterface())
-}
-
-//query raw, tablename can be empty
-func newQueryRaw(tableName string, writeAndReadDbs ...*sql.DB) *Query[SubQuery] {
-    sq := &SubQuery{}
-    if tableName != "" {
-        sq.tableName = tableName
-    }
-    return NewQuery(sq, writeAndReadDbs...)
+    return q.fromTable(q.T)
 }
 
 func (q *Query[T]) Clone() *Query[T] {
     var clone = *q
     return &clone
-}
-
-func (q *Query[T]) TableInterface() Table {
-    return interface{}(q.T).(Table)
-}
-
-func (q *Query[T]) AllCols() string {
-    return q.tables[0].getAliasOrTableName() + ".*"
-}
-
-func (q *Query[T]) AllColInterfaces() map[interface{}]string {
-    return q.tables[0].ormFields
 }
 
 func (q *Query[T]) UseDB(db ...*sql.DB) *Query[T] {
@@ -88,6 +69,25 @@ func (q *Query[T]) DBs() []*sql.DB {
     }
     return q.writeAndReadDbs
 }
+
+func (q *Query[T]) Tx() *sql.Tx {
+    return q.tx
+}
+
+func (q *Query[T]) Alias(alias string) *Query[T] {
+    q.tables[0].alias = alias
+    return q
+}
+
+//query raw, tablename can be empty
+func newQueryRaw(tableName string, writeAndReadDbs ...*sql.DB) *Query[*SubQuery] {
+    sq := &SubQuery{}
+    if tableName != "" {
+        sq.tableName = tableName
+    }
+    return NewQuery(sq, writeAndReadDbs...)
+}
+
 func (q *Query[T]) writeDB() *sql.DB {
     dbs := q.DBs()
     if len(dbs) > 0 {
@@ -103,30 +103,22 @@ func (q *Query[T]) readDB() *sql.DB {
         return q.writeDB()
     }
 }
-func (q *Query[T]) Tx() *sql.Tx {
-    return q.tx
+
+func (q *Query[T]) tableInterface() Table {
+    return any(q.T).(Table)
 }
 
-func (q *Query[T]) fromTable(table Table, alias ...string) *Query[T] {
-    q.tables = nil
-    q.wheres = nil
-    q.orderbys = nil
-    q.columns = nil
-    q.prepareSql = ""
-    q.bindings = nil
-    q.groupBy = nil
-    q.having = nil
-    q.limit, q.offset = 0, 0
-    q.result = QueryResult{}
+func (q *Query[T]) allCols() string {
+    return q.tables[0].getAliasOrTableName() + ".*"
+}
 
+func (q *Query[T]) fromTable(table Table) *Query[T] {
     newTable, err := q.parseTable(table)
     if err != nil {
         return q.setErr(err)
     }
 
-    if len(alias) > 0 {
-        newTable.alias = alias[0]
-    } else if newTable.rawSql != "" {
+    if newTable.rawSql != "" {
         newTable.alias = subqueryDefaultName
     }
     q.tables = append(q.tables, newTable)
@@ -164,7 +156,7 @@ func (q *Query[T]) parseTable(table Table) (*queryTable, error) {
         }
 
         tableStructType := reflect.TypeOf(table).Elem()
-        ormFields := make(map[interface{}]string)
+        ormFields := make(map[any]string)
 
         for i := 0; i < tableStruct.NumField(); i++ {
             valueField := tableStruct.Field(i)
@@ -197,22 +189,17 @@ func (q *Query[T]) parseTable(table Table) (*queryTable, error) {
     return newTable, nil
 }
 
-func (q *Query[T]) Alias(alias string) *Query[T] {
-    q.tables[0].alias = alias
-    return q
-}
-
-func (q *Query[T]) isRaw(v interface{}) (string, bool) {
+func (q *Query[T]) isRaw(v any) (string, bool) {
     val, ok := v.(Raw)
     return string(val), ok
 }
 
-func (q *Query[T]) isOperator(v interface{}) (string, bool) {
+func (q *Query[T]) isOperator(v any) (string, bool) {
     val, ok := v.(WhereOperator)
     return string(val), ok
 }
 
-func (q *Query[T]) isStringOrRaw(v interface{}) (string, bool) {
+func (q *Query[T]) isStringOrRaw(v any) (string, bool) {
     val := reflect.ValueOf(v)
 
     if val.Kind() == reflect.String {
@@ -222,7 +209,7 @@ func (q *Query[T]) isStringOrRaw(v interface{}) (string, bool) {
     }
 }
 
-func (q *Query[T]) parseColumn(v interface{}) (string, error) {
+func (q *Query[T]) parseColumn(v any) (string, error) {
     columnVar := reflect.ValueOf(v)
     if columnVar.Kind() == reflect.String {
         ret := columnVar.String()
@@ -286,12 +273,12 @@ func (q *Query[T]) Offset(offset int) *Query[T] {
 }
 
 //should not use group by after order by
-func (q *Query[T]) GroupBy(columns ...interface{}) *Query[T] {
+func (q *Query[T]) GroupBy(columns ...any) *Query[T] {
     q.groupBy = append(q.groupBy, columns...)
     return q
 }
 
-func (q *Query[T]) Having(column interface{}, vals ...interface{}) *Query[T] {
+func (q *Query[T]) Having(column any, vals ...any) *Query[T] {
     oldWheres := q.wheres
 
     newQuery := q.where(false, column, vals...)
@@ -304,7 +291,7 @@ func (q *Query[T]) Having(column interface{}, vals ...interface{}) *Query[T] {
     return newQuery
 }
 
-func (q *Query[T]) orHaving(column interface{}, vals ...interface{}) *Query[T] {
+func (q *Query[T]) OrHaving(column any, vals ...any) *Query[T] {
     oldWheres := q.wheres
 
     newQuery := q.where(true, column, vals...)
@@ -317,7 +304,7 @@ func (q *Query[T]) orHaving(column interface{}, vals ...interface{}) *Query[T] {
     return newQuery
 }
 
-func (q *Query[T]) PartitionBy(column interface{}) *Query[T] {
+func (q *Query[T]) PartitionBy(column any) *Query[T] {
     val, err := q.parseColumn(column)
     if err != nil {
         return q.setErr(err)
@@ -325,7 +312,7 @@ func (q *Query[T]) PartitionBy(column interface{}) *Query[T] {
     q.partitionbys = append(q.partitionbys, val)
     return q
 }
-func (q *Query[T]) OrderBy(column interface{}) *Query[T] {
+func (q *Query[T]) OrderBy(column any) *Query[T] {
     val, err := q.parseColumn(column)
     if err != nil {
         return q.setErr(err)
@@ -333,7 +320,7 @@ func (q *Query[T]) OrderBy(column interface{}) *Query[T] {
     q.orderbys = append(q.orderbys, val)
     return q
 }
-func (q *Query[T]) OrderByDesc(column interface{}) *Query[T] {
+func (q *Query[T]) OrderByDesc(column any) *Query[T] {
     val, err := q.parseColumn(column)
     if err != nil {
         return q.setErr(err)

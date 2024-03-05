@@ -63,8 +63,9 @@ func (q *Query[T]) CreateTable() (string, error) {
         extraStrs := getTableNewColumns(originColumnStrs, dbColumnStrs)
         retSql := ""
         var err error
+
         for _, v := range extraStrs {
-            tempSql := "ALTER TABLE " + "`" + q.TableInterface().TableName() + "`" + " ADD " + v
+            tempSql := "ALTER TABLE " + "`" + q.tableInterface().TableName() + "`" + " ADD " + v
 
             retSql += tempSql + "\n"
             _, err = db.Exec(tempSql)
@@ -98,12 +99,18 @@ func getTableNewColumns(origin, current []string) []string {
     }
 
     var ret []string
+    var preCol string
     for _, v := range current {
         if strings.HasPrefix(v, "`") {
             tempStrs := strings.SplitN(v, " ", 2)
             if exist[strings.ToLower(tempStrs[0])] == false {
-                ret = append(ret, v)
+                if preCol != "" {
+                    ret = append(ret, v+" after "+preCol)
+                } else {
+                    ret = append(ret, v)
+                }
             }
+            preCol = tempStrs[0]
         } else {
             tempStrs := strings.SplitN(v, " (", 2)
             if exist[strings.ToLower(tempStrs[0])] == false {

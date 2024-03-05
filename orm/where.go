@@ -1,11 +1,11 @@
 package orm
 
 type where struct {
-	IsOr        bool
-	Column      string
-	Operator    string
-	Val         interface{}
-	Raw         string
-	RawBindings []interface{}
-	SubWheres   []where
+    IsOr        bool
+    Column      string
+    Operator    string
+    Val         any
+    Raw         string
+    RawBindings []any
+    SubWheres   []where
 }

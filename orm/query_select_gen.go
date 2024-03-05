@@ -35,14 +35,14 @@ func (q *Query[T]) SubQuery() *SubQuery {
     }
 }
 
-func (q *Query[T]) generateSelectQuery(columns ...interface{}) *SubQuery {
+func (q *Query[T]) generateSelectQuery(columns ...any) *SubQuery {
     var ret SubQuery
     if q.prepareSql != "" {
         ret.raw = q.prepareSql
         ret.bindings = q.bindings
     } else {
         var rawSql string
-        bindings := make([]interface{}, 0)
+        bindings := make([]any, 0)
 
         if len(q.withCtes) > 0 {
             var raws []string
@@ -143,7 +143,7 @@ func (q *Query[T]) generateSelectQuery(columns ...interface{}) *SubQuery {
     return &ret
 }
 
-func (q *Query[T]) generateSelectColumns(columns ...interface{}) (string, error) {
+func (q *Query[T]) generateSelectColumns(columns ...any) (string, error) {
     var outColumns []string
     for _, v := range columns {
         column, err := q.parseColumn(v)

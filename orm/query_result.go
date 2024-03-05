@@ -6,7 +6,7 @@ import (
 
 type QueryResult struct {
     PrepareSql   string
-    Bindings     []interface{}
+    Bindings     []any
     LastInsertId int64
     RowsAffected int64
     Err          error
