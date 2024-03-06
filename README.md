@@ -73,7 +73,7 @@ func main() {
 ## update | delete | insert
 
 ```go
-    //update user set name="hello" where id = 1
+    //update user set name="john 2" where id = 1
     UserTable.Query().WherePrimary(1).Update(&UserTable.Name, "john 2")
     
     //query delete
