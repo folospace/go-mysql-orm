@@ -97,7 +97,7 @@ func (q *Query[T]) generateUpdateStr(updates []updateColumn, bindings *[]any) st
         } else if reflect.ValueOf(v.val).Kind() == reflect.Ptr {
             if v.val == v.col {
                 dotIndex := strings.LastIndex(column, ".")
-                temp = column + " = values(" + strings.Trim(column[dotIndex+1:], "`") + ")"
+                temp = column + " = values(`" + strings.Trim(column[dotIndex+1:], "`") + "`)"
             } else {
                 targetColumn, err := q.parseColumn(v.val)
                 if err != nil {

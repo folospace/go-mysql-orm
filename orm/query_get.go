@@ -181,13 +181,20 @@ func (q *Query[T]) scanRows(dest any, rows *sql.Rows) error {
             }
             var basePtrs = make([]any, len(rowColumns))
 
+            keyType := reflectMap.Key()
+            keyAddr := reflect.New(keyType).Interface()
+
             structVal := reflect.ValueOf(structAddr).Elem()
 
             for k, v := range rowColumns {
                 basePtrs[k] = structAddrMap[v]
                 if basePtrs[k] == nil {
-                    var temp any
-                    basePtrs[k] = &temp
+                    if k == 0 {
+                        basePtrs[k] = keyAddr
+                    } else {
+                        var temp any
+                        basePtrs[k] = &temp
+                    }
                 }
             }
 
@@ -205,11 +212,16 @@ func (q *Query[T]) scanRows(dest any, rows *sql.Rows) error {
             }
             var basePtrs = make([]any, len(rowColumns))
 
+            keyType := reflectMap.Key()
+            keyAddr := reflect.New(keyType).Interface()
+
             structVal := reflect.ValueOf(structAddr).Elem()
 
             for k, v := range rowColumns {
                 basePtrs[k] = structAddrMap[v]
-                if basePtrs[k] == nil {
+                if k == 0 {
+                    basePtrs[k] = keyAddr
+                } else if basePtrs[k] == nil {
                     var temp any
                     basePtrs[k] = &temp
                 }
