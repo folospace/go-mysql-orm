@@ -22,7 +22,7 @@ func (q *Query[T]) Get(primaryIds ...any) (T, QueryResult) {
 
 //get slice T
 func (q *Query[T]) Gets(primaryIds ...any) ([]T, QueryResult) {
-    var ret []T //todo not support
+    var ret []T
     var res QueryResult
     if len(primaryIds) == 1 {
         res = q.WherePrimary(primaryIds[0]).GetTo(&ret)
@@ -45,6 +45,11 @@ func (q *Query[T]) GetInt() (int64, QueryResult) {
     res := q.Limit(1).GetTo(&ret)
     return ret, res
 }
+func (q *Query[T]) GetUint() (uint64, QueryResult) {
+    var ret uint64
+    res := q.Limit(1).GetTo(&ret)
+    return ret, res
+}
 
 //get first string
 func (q *Query[T]) GetString() (string, QueryResult) {
@@ -53,27 +58,38 @@ func (q *Query[T]) GetString() (string, QueryResult) {
     return ret, res
 }
 
-//get first row
-func (q *Query[T]) GetRow() (map[string]any, QueryResult) {
-    var ret map[string]any
-    res := q.Limit(1).GetTo(&ret)
+// ↓↓ more Get examples ↓↓
+func (q *Query[T]) GetSliceInt() ([]int64, QueryResult) {
+    var ret []int64
+    res := q.GetTo(&ret)
     return ret, res
 }
-
-//get slice row
-func (q *Query[T]) GetRows() ([]map[string]any, QueryResult) {
-    var ret []map[string]any
+func (q *Query[T]) GetSliceUint() ([]uint64, QueryResult) {
+    var ret []uint64
+    res := q.GetTo(&ret)
+    return ret, res
+}
+func (q *Query[T]) GetSliceString() ([]string, QueryResult) {
+    var ret []string
+    res := q.GetTo(&ret)
+    return ret, res
+}
+func (q *Query[T]) GetMapString() (map[string]string, QueryResult) {
+    var ret map[string]string
+    res := q.GetTo(&ret)
+    return ret, res
+}
+func (q *Query[T]) GetMapSliceString() (map[string][]string, QueryResult) {
+    var ret map[string][]string
     res := q.GetTo(&ret)
     return ret, res
 }
 
 //get count T
 func (q *Query[T]) GetCount() (int64, QueryResult) {
-    var ret int64
     if len(q.groupBy) == 0 {
         if len(q.columns) == 0 {
-            res := q.Select("count(*)").GetTo(&ret)
-            return ret, res
+            return q.Select("count(*)").GetInt()
         } else {
             c, err := q.parseColumn(q.columns[0])
             q.columns = nil
@@ -83,19 +99,21 @@ func (q *Query[T]) GetCount() (int64, QueryResult) {
                     c = "count(" + c + ")"
                 }
             }
-            res := q.setErr(err).Select(c).GetTo(&ret)
-            return ret, res
+            return q.setErr(err).Select(c).GetInt()
         }
     } else {
         tempTable := q.SubQuery()
 
         newQuery := NewQuery(tempTable, tempTable.dbs...)
 
-        res := newQuery.setErr(tempTable.err).Select("count(*)").GetTo(&ret)
-        return ret, res
+        return newQuery.setErr(tempTable.err).Select("count(*)").GetInt()
     }
 }
 
+/*
+   destPtr, pointer of any value like:
+   value, []value, map[key]value, map[key][]value
+*/
 func (q *Query[T]) GetTo(destPtr any) QueryResult {
     tempTable := q.SubQuery()
 
@@ -153,25 +171,26 @@ func (q *Query[T]) scanRows(dest any, rows *sql.Rows) error {
     if gerr != nil {
         return gerr
     }
-    base := reflect.ValueOf(dest)
-    if base.Kind() != reflect.Ptr {
+    destValue := reflect.ValueOf(dest)
+    if destValue.Kind() != reflect.Ptr {
         return ErrDestOfGetToMustBePtr
     }
-    val := base.Elem()
-    if val.Kind() == reflect.Ptr {
+    destValueValue := destValue.Elem()
+    if destValueValue.Kind() == reflect.Ptr {
         return ErrDestOfGetToMustBePtr
     }
 
-    switch val.Kind() {
+    switch destValueValue.Kind() {
     case reflect.Map:
         reflectMap := reflect.TypeOf(dest).Elem()
 
-        ele := reflectMap.Elem()
-        if ele.Kind() == reflect.Ptr && ele.Elem() != q.tables[0].tableStructType {
+        mapKeyType := reflectMap.Key()
+        mapValueType := reflectMap.Elem()
+        if mapValueType.Kind() == reflect.Ptr && mapValueType.Elem() != q.tables[0].tableStructType {
             return ErrDestOfGetToMapElemMustNotBePtr
         }
         newVal := reflect.MakeMap(reflectMap)
-        switch ele.Kind() {
+        switch mapValueType.Kind() {
         case reflect.Ptr:
             structAddr := reflect.New(q.tables[0].tableStructType).Interface()
 
@@ -203,37 +222,11 @@ func (q *Query[T]) scanRows(dest any, rows *sql.Rows) error {
                 tmp.Elem().Set(structVal)
                 newVal.SetMapIndex(reflect.ValueOf(basePtrs[0]).Elem(), tmp)
             }, false)
-            base.Elem().Set(newVal)
-        case reflect.Struct:
-            structAddr := reflect.New(ele).Interface()
-            structAddrMap, err := getStructFieldAddrMap(structAddr)
-            if err != nil {
-                return err
-            }
-            var basePtrs = make([]any, len(rowColumns))
-
-            keyType := reflectMap.Key()
-            keyAddr := reflect.New(keyType).Interface()
-
-            structVal := reflect.ValueOf(structAddr).Elem()
-
-            for k, v := range rowColumns {
-                basePtrs[k] = structAddrMap[v]
-                if k == 0 {
-                    basePtrs[k] = keyAddr
-                } else if basePtrs[k] == nil {
-                    var temp any
-                    basePtrs[k] = &temp
-                }
-            }
-            gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
-                newVal.SetMapIndex(reflect.ValueOf(basePtrs[0]).Elem(), structVal)
-            }, false)
-            base.Elem().Set(newVal)
-        case reflect.Slice:
-            switch ele.Elem().Kind() {
+            destValue.Elem().Set(newVal)
+        case reflect.Slice: //group by results
+            switch mapValueType.Elem().Kind() {
             case reflect.Ptr:
-                if ele.Elem().Elem() != q.tables[0].tableStructType {
+                if mapValueType.Elem().Elem() != q.tables[0].tableStructType {
                     return ErrDestOfGetToSliceElemMustNotBePtr
                 }
                 keyAddr := reflect.New(reflectMap.Key()).Interface()
@@ -264,118 +257,123 @@ func (q *Query[T]) scanRows(dest any, rows *sql.Rows) error {
                     index := reflect.ValueOf(basePtrs[0]).Elem()
                     tempSlice := newVal.MapIndex(index)
                     if tempSlice.IsValid() == false {
-                        tempSlice = reflect.MakeSlice(ele, 0, 0)
+                        tempSlice = reflect.MakeSlice(mapValueType, 0, 0)
                     }
 
                     newVal.SetMapIndex(index, reflect.Append(tempSlice, tmp))
                 }, false)
 
-                base.Elem().Set(newVal)
-
+                destValue.Elem().Set(newVal)
             case reflect.Struct:
-                keyAddr := reflect.New(reflectMap.Key()).Interface()
-                structAddr := reflect.New(ele.Elem()).Interface()
+                newStructVal := reflect.New(mapValueType.Elem())
+                if reflectValueIsOrmField(newStructVal) == false {
+                    keyAddr := reflect.New(reflectMap.Key()).Interface()
+                    structAddr := newStructVal.Interface()
+                    structAddrMap, err := getStructFieldAddrMap(structAddr)
+                    if err != nil {
+                        return err
+                    }
+                    var basePtrs = make([]any, len(rowColumns))
+                    structVal := newStructVal.Elem()
+
+                    for k, v := range rowColumns {
+                        basePtrs[k] = structAddrMap[v]
+                        if basePtrs[k] == nil {
+                            var temp any
+                            basePtrs[k] = &temp
+                        }
+                    }
+                    basePtrs[0] = keyAddr
+                    gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
+                        index := reflect.ValueOf(basePtrs[0]).Elem()
+                        tempSlice := newVal.MapIndex(index)
+                        if tempSlice.IsValid() == false {
+                            tempSlice = reflect.MakeSlice(mapValueType, 0, 0)
+                        }
+                        newVal.SetMapIndex(index, reflect.Append(tempSlice, structVal))
+                    }, false)
+                    destValue.Elem().Set(newVal)
+                    break
+                }
+                fallthrough
+            default:
+                newKeyVal := reflect.New(reflectMap.Key())
+                var basePtrs = make([]any, len(rowColumns))
+                for k := range basePtrs {
+                    if k == 0 {
+                        basePtrs[0] = newKeyVal.Interface()
+                    } else {
+                        basePtrs[k] = reflect.New(mapValueType.Elem()).Interface()
+                    }
+                }
+                gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
+                    index := newKeyVal.Elem()
+                    tempSlice := newVal.MapIndex(index)
+                    if tempSlice.IsValid() == false {
+                        tempSlice = reflect.MakeSlice(mapValueType, 0, 0)
+                    }
+                    for k := range basePtrs {
+                        if k > 0 {
+                            tempSlice = reflect.Append(tempSlice, reflect.ValueOf(basePtrs[k]).Elem())
+                        }
+                    }
+                    newVal.SetMapIndex(index, tempSlice)
+                }, false)
+                destValue.Elem().Set(newVal)
+            }
+        case reflect.Struct:
+            newValue := reflect.New(mapValueType)
+            if reflectValueIsOrmField(newValue) == false {
+                structAddr := newValue.Interface()
                 structAddrMap, err := getStructFieldAddrMap(structAddr)
                 if err != nil {
                     return err
                 }
                 var basePtrs = make([]any, len(rowColumns))
-                structVal := reflect.ValueOf(structAddr).Elem()
+
+                keyType := reflectMap.Key()
+                keyAddr := reflect.New(keyType).Interface()
+
+                structVal := newValue.Elem()
 
                 for k, v := range rowColumns {
                     basePtrs[k] = structAddrMap[v]
-                    if basePtrs[k] == nil {
+                    if k == 0 {
+                        basePtrs[k] = keyAddr
+                    } else if basePtrs[k] == nil {
                         var temp any
                         basePtrs[k] = &temp
                     }
                 }
-                basePtrs[0] = keyAddr
                 gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
-                    index := reflect.ValueOf(basePtrs[0]).Elem()
-                    tempSlice := newVal.MapIndex(index)
-                    if tempSlice.IsValid() == false {
-                        tempSlice = reflect.MakeSlice(ele, 0, 0)
-                    }
-                    newVal.SetMapIndex(index, reflect.Append(tempSlice, structVal))
+                    newVal.SetMapIndex(reflect.ValueOf(basePtrs[0]).Elem(), structVal)
                 }, false)
-                base.Elem().Set(newVal)
-            default:
-                keyAddr := reflect.New(reflectMap.Key()).Interface()
-                valAddr := reflect.New(ele.Elem()).Interface()
-
-                var basePtrs = make([]any, 2)
-                basePtrs[0] = keyAddr
-                basePtrs[1] = valAddr
-
-                gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
-                    index := reflect.ValueOf(basePtrs[0]).Elem()
-                    tempSlice := newVal.MapIndex(index)
-                    if tempSlice.IsValid() == false {
-                        tempSlice = reflect.MakeSlice(ele, 0, 0)
-                    }
-                    newVal.SetMapIndex(index, reflect.Append(tempSlice, reflect.ValueOf(valAddr).Elem()))
-                }, false)
-                base.Elem().Set(newVal)
-            }
-        case reflect.Interface:
-            if reflect.TypeOf(dest).Elem().Key().Kind() == reflect.String {
-
-                var basePtrs = make([]any, len(rowColumns))
-                for k := range basePtrs {
-                    var temp any
-                    basePtrs[k] = &temp
-                }
-
-                gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
-                    for k, v := range rowColumns {
-                        newVal.SetMapIndex(reflect.ValueOf(v), reflect.ValueOf(basePtrs[k]).Elem())
-                    }
-                }, true)
-
-                base.Elem().Set(newVal)
-                return gerr
+                destValue.Elem().Set(newVal)
+                break
             }
             fallthrough
         default:
-            keyType := reflect.TypeOf(dest).Elem().Key()
-
-            keyAddr := reflect.New(keyType).Interface()
-            tempAddr := reflect.New(ele).Interface()
+            newKeyValue := reflect.New(mapKeyType)
+            newValValue := reflect.New(mapValueType)
 
             var basePtrs = make([]any, len(rowColumns))
 
             for k := 0; k < len(rowColumns); k++ {
                 if k == 0 {
-                    basePtrs[k] = keyAddr
+                    basePtrs[k] = newKeyValue.Interface()
                 } else if k == 1 {
-                    basePtrs[k] = tempAddr
+                    basePtrs[k] = newValValue.Interface()
                 } else {
                     var temp any
                     basePtrs[k] = &temp
                 }
             }
             gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
-                newVal.SetMapIndex(reflect.ValueOf(keyAddr).Elem(), reflect.ValueOf(tempAddr).Elem())
+                newVal.SetMapIndex(newKeyValue.Elem(), newValValue.Elem())
             }, false)
 
-            base.Elem().Set(newVal)
+            destValue.Elem().Set(newVal)
         }
-    case reflect.Struct:
-        structAddr := dest
-        structAddrMap, err := getStructFieldAddrMap(structAddr)
-        if err != nil {
-            return err
-        }
-        var basePtrs = make([]any, len(rowColumns))
-
-        for k, v := range rowColumns {
-            basePtrs[k] = structAddrMap[v]
-            if basePtrs[k] == nil {
-                var temp any
-                basePtrs[k] = &temp
-            }
-        }
-        gerr = q.scanValues(basePtrs, rowColumns, rows, nil, true)
     case reflect.Slice:
         ele := reflect.TypeOf(dest).Elem().Elem()
         if ele.Kind() == reflect.Ptr && ele.Elem() != q.tables[0].tableStructType {
@@ -405,18 +403,60 @@ func (q *Query[T]) scanRows(dest any, rows *sql.Rows) error {
             gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
                 tmp := reflect.New(q.tables[0].tableStructType)
                 tmp.Elem().Set(structVal)
-                val = reflect.Append(val, tmp)
+                destValueValue = reflect.Append(destValueValue, tmp)
             }, false)
 
-            base.Elem().Set(val)
+            destValue.Elem().Set(destValueValue)
         case reflect.Struct:
-            structAddr := reflect.New(ele).Interface()
+            eleNew := reflect.New(ele)
+            if reflectValueIsOrmField(eleNew) == false {
+                structAddr := eleNew.Interface()
+                structVal := eleNew.Elem()
+                structAddrMap, err := getStructFieldAddrMap(structAddr)
+                if err != nil {
+                    return err
+                }
+                var basePtrs = make([]any, len(rowColumns))
+
+                for k, v := range rowColumns {
+                    basePtrs[k] = structAddrMap[v]
+                    if basePtrs[k] == nil {
+                        var temp any
+                        basePtrs[k] = &temp
+                    }
+                }
+
+                gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
+                    destValueValue = reflect.Append(destValueValue, structVal)
+                }, false)
+
+                destValue.Elem().Set(destValueValue)
+                break
+            }
+            fallthrough
+        default:
+            var basePtrs = make([]any, len(rowColumns))
+
+            for k := 0; k < len(rowColumns); k++ {
+                basePtrs[k] = reflect.New(ele).Interface()
+            }
+
+            gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
+                for _, v := range basePtrs {
+                    destValueValue = reflect.Append(destValueValue, reflect.ValueOf(v).Elem())
+                }
+            }, false)
+
+            destValue.Elem().Set(destValueValue)
+        }
+    case reflect.Struct:
+        if reflectValueIsOrmField(destValue) == false {
+            structAddr := dest
             structAddrMap, err := getStructFieldAddrMap(structAddr)
             if err != nil {
                 return err
             }
             var basePtrs = make([]any, len(rowColumns))
-            structVal := reflect.ValueOf(structAddr).Elem()
 
             for k, v := range rowColumns {
                 basePtrs[k] = structAddrMap[v]
@@ -425,50 +465,10 @@ func (q *Query[T]) scanRows(dest any, rows *sql.Rows) error {
                     basePtrs[k] = &temp
                 }
             }
-
-            gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
-                val = reflect.Append(val, structVal)
-            }, false)
-
-            base.Elem().Set(val)
-        case reflect.Map:
-            var basePtrs = make([]any, len(rowColumns))
-
-            valEle := ele.Elem()
-
-            for k := range basePtrs {
-                //var temp any
-                basePtrs[k] = reflect.New(valEle).Interface()
-            }
-            gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
-                newVal := reflect.MakeMap(ele)
-                for k, v := range rowColumns {
-                    newVal.SetMapIndex(reflect.ValueOf(v), reflect.ValueOf(basePtrs[k]).Elem())
-                }
-                val = reflect.Append(val, newVal)
-            }, false)
-
-            base.Elem().Set(val)
-        default:
-            tempAddr := reflect.New(ele).Interface()
-
-            var basePtrs = make([]any, len(rowColumns))
-
-            for k := 0; k < len(rowColumns); k++ {
-                if k == 0 {
-                    basePtrs[k] = tempAddr
-                } else {
-                    var temp any
-                    basePtrs[k] = &temp
-                }
-            }
-
-            gerr = q.scanValues(basePtrs, rowColumns, rows, func() {
-                val = reflect.Append(val, reflect.ValueOf(tempAddr).Elem())
-            }, false)
-
-            base.Elem().Set(val)
+            gerr = q.scanValues(basePtrs, rowColumns, rows, nil, true)
+            break
         }
+        fallthrough
     default:
         var basePtrs = make([]any, len(rowColumns))
         for k := 0; k < len(rowColumns); k++ {
