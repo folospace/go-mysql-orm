@@ -7,6 +7,7 @@ import (
     "time"
 )
 
+//json int(13) <=> go time.time
 type JsonTime struct {
     time.Time
 }

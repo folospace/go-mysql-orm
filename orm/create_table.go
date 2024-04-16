@@ -342,7 +342,7 @@ func getMigrateColumns(table *queryTable) []dBColumn {
             }
         }
 
-        if column.Default == "" || SliceContain(definedDefault, strings.ToLower(column.Default)) < 0 {
+        if column.Default == "" || sliceContain(definedDefault, strings.ToLower(column.Default)) == false {
             column.Default = "'" + column.Default + "'"
         }
 
