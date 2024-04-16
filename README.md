@@ -15,8 +15,9 @@ var db, _ = orm.OpenMysql("user:password@tcp(127.0.0.1:3306)/mydb?parseTime=true
 var UserTable = new(User)
 
 type User struct {
-    Id   int    `json:"id"`
-    Name string `json:"name"`
+    Id          int    `json:"id"`
+    Name        string `json:"name"`
+    LuckyNumbers orm.JsonField[[]int8] `json:"lucky_numbers"`
 }
 
 func (*User) Connections() []*sql.DB {
@@ -39,14 +40,15 @@ func main() {
     //create struct from db table
     UserTable.Query().CreateStruct() 
 
-    //insert one user
-    UserTable.Query().Insert(&User{Name:"john"})
-    
-    //get user id = 1
-    user, _ := UserTable.Query().Get(1)
-    
-    //update user name
-    user.Query().Update(&UserTable.Name, "john 2")
+    var user = User{Name:"john", LuckyNumbers:orm.NewJsonField([]int8{6,8})}
+    //insert user
+    UserTable.Query().Insert(&user)
+    //get last user
+    user, _ = UserTable.Query().OrderByDesc(&UserTable.Id).Get()
+    //update user
+    user.Query().Update(&UserTable.Name, "john wick")
+    //delete user
+    user.Query().Delete()
 }
 ```
 
