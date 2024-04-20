@@ -134,16 +134,19 @@ func (q *Query[T]) parseTable(table Table) (*queryTable, error) {
             rawSql:   temp.raw,
             bindings: temp.bindings,
         }
+        return newTable, nil
     } else if temp, ok := table.(*SubQuery); ok {
         newTable = &queryTable{
             table:    table,
             rawSql:   temp.raw,
             bindings: temp.bindings,
         }
+        return newTable, nil
     } else {
         cached := getTableFromCache(table)
         if cached != nil {
-            return cached, nil
+            tmp := *cached
+            return &tmp, nil
         }
         tableStructAddr := reflect.ValueOf(table)
         if tableStructAddr.Kind() != reflect.Ptr {
@@ -185,8 +188,10 @@ func (q *Query[T]) parseTable(table Table) (*queryTable, error) {
             ormFields:       ormFields,
         }
         cacheTable(table, newTable)
+
+        tmp := *newTable
+        return &tmp, nil
     }
-    return newTable, nil
 }
 
 func (q *Query[T]) isRaw(v any) (string, bool) {
