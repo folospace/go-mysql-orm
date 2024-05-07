@@ -193,7 +193,7 @@ func (q *Query[T]) insert(data any) QueryResult {
     res := q.Execute()
 
     //set first element's first field on condition
-    if res.Err == nil && res.LastInsertId > 0 && (val.Len() == 1 || q.insertIgnore == false) {
+    if isSubQuery == false && res.Err == nil && res.LastInsertId > 0 && (val.Len() == 1 || q.insertIgnore == false) {
         val.Index(0).Elem().Field(0).Set(reflect.ValueOf(res.LastInsertId).Convert(val.Index(0).Elem().Field(0).Type()))
     }
     return res
