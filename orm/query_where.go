@@ -101,18 +101,18 @@ func (q *Query[T]) OrWhereBetween(column any, valLess, valGreat any) *Query[T] {
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (q *Query[T]) WhereFunc(f func(*Query[T]) *Query[T]) *Query[T] {
+func (q *Query[T]) WhereFunc(f func(where *Query[T]) *Query[T]) *Query[T] {
     return q.whereGroup(false, f)
 }
 
 //"id=1"
 //&obj.id, 1
 //&obj.id, "=", 1
-func (q *Query[T]) OrWhereFunc(f func(*Query[T]) *Query[T]) *Query[T] {
+func (q *Query[T]) OrWhereFunc(f func(where *Query[T]) *Query[T]) *Query[T] {
     return q.whereGroup(true, f)
 }
 
-func (q *Query[T]) whereGroup(isOr bool, f func(*Query[T]) *Query[T]) *Query[T] {
+func (q *Query[T]) whereGroup(isOr bool, f func(where *Query[T]) *Query[T]) *Query[T] {
     temp, err := q.generateWhereGroup(f)
     q.setErr(err)
     if len(temp.SubWheres) > 0 {
@@ -122,7 +122,7 @@ func (q *Query[T]) whereGroup(isOr bool, f func(*Query[T]) *Query[T]) *Query[T] 
     return q
 }
 
-func (q *Query[T]) generateWhereGroup(f func(*Query[T]) *Query[T]) (where, error) {
+func (q *Query[T]) generateWhereGroup(f func(where *Query[T]) *Query[T]) (where, error) {
     start := len(q.wheres)
     nq := *q
     f(&nq)

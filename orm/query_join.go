@@ -26,7 +26,7 @@ func (q *Query[T]) OuterJoin(table Table, where func(join *Query[T]) *Query[T], 
     return q.join(JoinTypeOuter, table, where, alias...)
 }
 
-func (q *Query[T]) join(joinType JoinType, table Table, wheref func(*Query[T]) *Query[T], alias ...string) *Query[T] {
+func (q *Query[T]) join(joinType JoinType, table Table, wheref func(where *Query[T]) *Query[T], alias ...string) *Query[T] {
     newTable, err := q.parseTable(table)
     if err != nil {
         return q.setErr(err)
