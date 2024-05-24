@@ -16,7 +16,7 @@ func (q *Query[T]) Delete(primaryIds ...any) QueryResult {
 func (q *Query[T]) delete() QueryResult {
     bindings := make([]any, 0)
 
-    if len(q.wheres) == 0 && len(q.tables) <= 1 {
+    if len(q.wheres) == 0 && len(q.tables) <= 1 && q.limit == 0 {
         q.setErr(ErrDeleteWithoutCondition)
     }
 

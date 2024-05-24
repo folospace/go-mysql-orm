@@ -7,7 +7,6 @@ import (
     "github.com/folospace/go-mysql-orm/orm"
 )
 
-
 //connect mysql db
 var db, _ = orm.OpenMysql("user:password@tcp(127.0.0.1:3306)/mydb?parseTime=true&charset=utf8mb4&loc=Asia%2FShanghai")
 
@@ -15,9 +14,12 @@ var db, _ = orm.OpenMysql("user:password@tcp(127.0.0.1:3306)/mydb?parseTime=true
 var UserTable = new(User)
 
 type User struct {
-    Id          int    `json:"id"`
-    Name        string `json:"name"`
-    LuckyNumbers orm.JsonField[[]int8] `json:"lucky_numbers"`
+    Id        int       `json:"id"`
+    Email     string    `json:"email" orm:"email,unique"`
+    Name      string    `json:"name" default:"jack"`
+    Avatar    string    `json:"avatar" comment:"head image"`
+    CreatedAt time.Time `json:"created_at"`
+    UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (*User) Connections() []*sql.DB {
@@ -38,37 +40,30 @@ func main() {
     UserTable.Query().CreateTable()  
     
     //create struct from db table
-    UserTable.Query().CreateStruct() 
-
-    var user = User{Name:"john", LuckyNumbers:orm.NewJsonField([]int8{6,8})}
-    //insert user
-    UserTable.Query().Insert(&user)
-    //get last user
-    user, _ = UserTable.Query().OrderByDesc(&UserTable.Id).Get()
-    //update user
-    user.Query().Update(&UserTable.Name, "john wick")
-    //delete user
-    user.Query().Delete()
+    UserTable.Query().CreateStruct()
 }
 ```
 
 ## select
 
 ```go
-    //get users where name='join'
+    //select * from user where name='john' //to struct slice
     users, _ := UserTable.Query().Where(&UserTable.Name, "john").Gets()
+    fmt.Println(users) //User{Id:1}, User{Id:2}, ...
     
-    //get users count(*)
-    count, _ := UserTable.Query().GetCount()
+    //select email from user //to slice
+    emails, _ := UserTable.Query().Select(&UserTable.Email).Limit(10).GetSliceString()
+    fmt.Println(emails) //a**@gmail.com, b**@gmail.com, ...
     
-    //get user names map key by id
-    var userNameKeyById map[int]string
-    UserTable.Query().Select(&UserTable.Id, &UserTable.Name).GetTo(&userNameKeyById)
+    //select user info to slice, group by id
+    var userInfoMap map[int][]string
+    UserTable.Query().Select(&UserTable.Id, &UserTable.Email, &UserTable.Name).Limit(10).GetTo(&userInfoMap)
+    fmt.Println(userInfoMap) //{1:[a**@gmail.com, a**], 2:[b**@gmail.com, b**], ...}
     
-    //get users map key by name
-    //useful when find has-many relations
-    var usersMapkeyByName map[string][]*User
-    UserTable.Query().Select(&UserTable.Name, UserTable).GetTo(&usersMapkeyByName)
+    //select user id to slice, group by name
+    var sameNameUsers map[string][]int
+    UserTable.Query().Select(&UserTable.Name, &UserTable.Id).Limit(10).GetTo(&sameNameUsers)
+    fmt.Println(sameNameUsers) //{a**:[1,3], b**:[2,4], ...}
     
 ```
 
@@ -78,12 +73,15 @@ func main() {
     //update user set name="john 2" where id = 1
     UserTable.Query().WherePrimary(1).Update(&UserTable.Name, "john 2")
     
-    //query delete
+    //delete
     UserTable.Query().Delete(1, 2, 3)
     
-    //query insert
-    _ = UserTable.Query().Insert(&User{Name: "han"}).LastInsertId //insert one row and get id
-
+    //insert
+    _ = UserTable.Query().Insert(&User{Name: "han"})   
+    
+    //update users with different names
+    _ = UserTable.Query().OnConflictUpdate(&UserTable.Name, &UserTable.Name).
+    Insert(&User{Id: 1, Name: "han"}, &User{Id: 2, Name: "join"})
 ```
 
 ### join

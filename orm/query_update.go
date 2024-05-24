@@ -51,7 +51,7 @@ func (q *Query[T]) genUpdates(vals ...any) ([]updateColumn, error) {
 func (q *Query[T]) updates(updates ...updateColumn) QueryResult {
     bindings := make([]any, 0)
 
-    if len(q.wheres) == 0 && len(q.tables) <= 1 {
+    if len(q.wheres) == 0 && len(q.tables) <= 1 && q.limit == 0 {
         q.setErr(ErrUpdateWithoutCondition)
     }
 
