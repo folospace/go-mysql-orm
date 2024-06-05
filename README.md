@@ -47,6 +47,10 @@ func main() {
 ## select
 
 ```go
+    //select * from user where id = 1 //to struct
+    user, _ := UserTable.Query().Get(1)
+    fmt.Println(user) //User{Id:1}
+
     //select * from user where name='john' //to struct slice
     users, _ := UserTable.Query().Where(&UserTable.Name, "john").Gets()
     fmt.Println(users) //User{Id:1}, User{Id:2}, ...
