@@ -387,6 +387,12 @@ func getTypeAndDefault(val reflect.Value) (string, string) {
     case reflect.Uint64:
         types = "bigint unsigned"
         defaults = "0"
+    case reflect.Float32:
+        types = "float"
+        defaults = "0"
+    case reflect.Float64:
+        types = "double"
+        defaults = "0"
     case reflect.String:
         types = "varchar(255)"
     default:
