@@ -113,7 +113,7 @@ func (q *Query[T]) ForUpdate(forUpdateType ...SelectForUpdateType) *Query[T] {
 func (q *Query[T]) SelectWithTimeout(duration time.Duration) *Query[T] {
     ms := duration.Milliseconds()
     if ms > 0 {
-        q.selectTimeout = "/*+ MAX_EXECUTION_TIME(+" + strconv.FormatInt(ms, 10) + "+) */"
+        q.selectTimeout = "/*+ MAX_EXECUTION_TIME(" + strconv.FormatInt(ms, 10) + ") */"
     }
     return q
 }
