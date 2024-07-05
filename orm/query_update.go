@@ -100,11 +100,14 @@ func (q *Query[T]) generateUpdateStr(updates []updateColumn, bindings *[]any) st
                 temp = column + " = values(`" + strings.Trim(column[dotIndex+1:], "`") + "`)"
             } else {
                 targetColumn, err := q.parseColumn(v.val)
-                if err != nil {
-                    q.setErr(err)
-                    return ""
+                if err == nil {
+                    temp = column + " = " + targetColumn
+                } else {
+                    //q.setErr(err)
+                    //return ""
+                    temp = column + " = ?"
+                    *bindings = append(*bindings, v.val)
                 }
-                temp = column + " = " + targetColumn
             }
         } else {
             temp = column + " = ?"
