@@ -113,7 +113,7 @@ func main() {
 
 ```go
     //subquery
-    subquery := UserTable.Query().Where(&UserTable.Id, 1).SubQuery()
+    subquery := UserTable.Query().WherePrimary(1).Select(&UserTable.Id).SubQuery()
     
     //where in suquery
     UserTable.Query().Where(&UserTable.Id, orm.WhereIn, subquery).Gets()
