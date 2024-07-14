@@ -119,7 +119,7 @@ func main() {
     UserTable.Query().Where(&UserTable.Id, orm.WhereIn, subquery).Gets()
     
     //insert subquery
-    UserTable.Query().InsertSubquery(subquery)
+    UserTable.Query().Select(&UserTable.Id).InsertSubquery(subquery)
     
     //join subquery
     UserTable.Query().Join(subquery, func (query *orm.Query[*User]) *orm.Query[*User] {
