@@ -3,6 +3,7 @@ package orm
 import (
     "context"
     "database/sql"
+    "github.com/mcuadros/go-defaults"
     "math/rand"
     "reflect"
     "strconv"
@@ -44,6 +45,12 @@ func NewQuery[T Table](t T, writeAndReadDbs ...*sql.DB) *Query[T] {
     return q.fromTable(q.T)
 }
 
+func (q *Query[T]) NewDefault() T {
+    ret, _ := reflect.New(q.tables[0].tableStructType).Interface().(T)
+    defaults.SetDefaults(ret)
+    return ret
+}
+
 func (q *Query[T]) Clone() *Query[T] {
     var clone = *q
     return &clone
@@ -51,6 +58,11 @@ func (q *Query[T]) Clone() *Query[T] {
 
 func (q *Query[T]) UseDB(db ...*sql.DB) *Query[T] {
     q.writeAndReadDbs = db
+    return q
+}
+
+func (q *Query[T]) UseFirstDB() *Query[T] {
+    q.writeAndReadDbs = q.tables[0].table.Connections()[:1]
     return q
 }
 

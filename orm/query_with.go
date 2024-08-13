@@ -20,7 +20,13 @@ func (q *Query[T]) WithParentsOnColumn(pidColumn any) *Query[T] {
     appendQuery := NewQuery(q.T, q.DBs()...)
     appendQuery = appendQuery.Join(cte.T, func(query *Query[T]) *Query[T] {
         return query.Where(appendQuery.tables[0].tableStruct.Field(0).Addr().Interface(), Raw(tempName+"."+newcol))
-    }).Select(appendQuery.allCols())
+    })
+
+    if len(q.columns) > 0 {
+        appendQuery.Select(q.columns...)
+    } else {
+        appendQuery.Select(appendQuery.allCols())
+    }
 
     q.self = cte
     return q.UnionAll(appendQuery.SubQuery())
@@ -48,7 +54,13 @@ func (q *Query[T]) WithChildrenOnColumn(pidColumn any) *Query[T] {
     appendQuery := NewQuery(q.T, q.DBs()...)
     appendQuery = appendQuery.Join(cte.T, func(query *Query[T]) *Query[T] {
         return query.Where(pcol, Raw(tempName+"."+newcol))
-    }).Select(appendQuery.allCols())
+    })
+
+    if len(q.columns) > 0 {
+        appendQuery.Select(q.columns...)
+    } else {
+        appendQuery.Select(appendQuery.allCols())
+    }
 
     q.self = cte
     return q.UnionAll(appendQuery.SubQuery())

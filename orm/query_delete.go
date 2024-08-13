@@ -8,8 +8,10 @@ func (q *Query[T]) Delete(primaryIds ...any) QueryResult {
 
     if len(primaryIds) == 1 {
         return q.WherePrimary(primaryIds[0]).delete()
-    } else {
+    } else if len(primaryIds) > 0 {
         return q.WherePrimary(primaryIds).delete()
+    } else {
+        return q.delete()
     }
 }
 

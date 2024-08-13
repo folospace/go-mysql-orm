@@ -13,8 +13,10 @@ func (q *Query[T]) Get(primaryIds ...any) (T, QueryResult) {
 
     if len(primaryIds) == 1 {
         res = q.WherePrimary(primaryIds[0]).Limit(1).GetTo(ret)
-    } else {
+    } else if len(primaryIds) > 0 {
         res = q.WherePrimary(primaryIds).Limit(1).GetTo(ret)
+    } else {
+        res = q.Limit(1).GetTo(ret)
     }
 
     return ret.(T), res
@@ -26,8 +28,10 @@ func (q *Query[T]) Gets(primaryIds ...any) ([]T, QueryResult) {
     var res QueryResult
     if len(primaryIds) == 1 {
         res = q.WherePrimary(primaryIds[0]).GetTo(&ret)
-    } else {
+    } else if len(primaryIds) > 0 {
         res = q.WherePrimary(primaryIds).GetTo(&ret)
+    } else {
+        res = q.GetTo(&ret)
     }
     return ret, res
 }

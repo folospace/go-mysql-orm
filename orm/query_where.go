@@ -47,9 +47,6 @@ func (q *Query[T]) WherePrimary(operator any, vals ...any) *Query[T] {
         vals = []any{operator}
         reflectVar := reflect.ValueOf(operator)
         if reflectVar.Kind() == reflect.Slice {
-            if reflectVar.Len() == 0 {
-                return q
-            }
             operator = WhereIn
         } else {
             operator = WhereEqual
@@ -74,9 +71,6 @@ func (q *Query[T]) OrWherePrimary(operator any, vals ...any) *Query[T] {
         vals = []any{operator}
         reflectVar := reflect.ValueOf(operator)
         if reflectVar.Kind() == reflect.Slice {
-            if reflectVar.Len() == 0 {
-                return q
-            }
             operator = WhereIn
         } else {
             operator = WhereEqual
