@@ -3,8 +3,13 @@ package orm
 import (
     "database/sql"
     "reflect"
+    "regexp"
+    "strconv"
     "strings"
 )
+
+var scanErrPrefix = "sql: Scan error on column index"
+var matchScanErrIndex = regexp.MustCompile("\\d+")
 
 //get first T
 func (q *Query[T]) Get(primaryIds ...any) (T, QueryResult) {
@@ -528,6 +533,20 @@ func (q *Query[T]) scanValues(basePtrs []any, rowColumns []string, rows *sql.Row
         }
 
         err = rows.Scan(finalPtrs...)
+        //set zero value after err column index
+        if err != nil && strings.HasPrefix(err.Error(), scanErrPrefix) {
+            indexs := matchScanErrIndex.FindAllString(err.Error(), 1)
+            if len(indexs) > 0 {
+                i, _ := strconv.Atoi(indexs[0])
+                for k := range basePtrs {
+                    if k >= i {
+                        felement := reflect.ValueOf(basePtrs[k]).Elem()
+                        felement.Set(reflect.Zero(felement.Type()))
+                    }
+                }
+            }
+        }
+
         q.result.RowsAffected += 1
 
         if setVal != nil {
