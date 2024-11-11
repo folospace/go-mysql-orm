@@ -74,6 +74,13 @@ func (q *Query[T]) Select(columns ...any) *Query[T] {
     return q
 }
 
+func (q *Query[T]) SelectAs(column any, as string) *Query[T] {
+    colStr, err := q.generateSelectColumns(column)
+    q.setErr(err)
+    q.columns = append(q.columns, colStr+" as "+as)
+    return q
+}
+
 func (q *Query[T]) SelectExclude(exceptColumns ...any) *Query[T] {
     q.columns = nil
 
