@@ -93,6 +93,36 @@ func (q *Query[T]) GetMapSliceString() (map[string][]string, QueryResult) {
     res := q.GetTo(&ret)
     return ret, res
 }
+func (q *Query[T]) GetMapStringInt() (map[string]int64, QueryResult) {
+    var ret map[string]int64
+    res := q.GetTo(&ret)
+    return ret, res
+}
+func (q *Query[T]) GetMapIntString() (map[int64]string, QueryResult) {
+    var ret map[int64]string
+    res := q.GetTo(&ret)
+    return ret, res
+}
+func (q *Query[T]) GetMapStringUint() (map[string]uint64, QueryResult) {
+    var ret map[string]uint64
+    res := q.GetTo(&ret)
+    return ret, res
+}
+func (q *Query[T]) GetMapUintString() (map[uint64]string, QueryResult) {
+    var ret map[uint64]string
+    res := q.GetTo(&ret)
+    return ret, res
+}
+func (q *Query[T]) GetMapInt() (map[int64]int64, QueryResult) {
+    var ret map[int64]int64
+    res := q.GetTo(&ret)
+    return ret, res
+}
+func (q *Query[T]) GetMapUint() (map[uint64]uint64, QueryResult) {
+    var ret map[uint64]uint64
+    res := q.GetTo(&ret)
+    return ret, res
+}
 
 //get count T
 func (q *Query[T]) GetCount() (int64, QueryResult) {
