@@ -81,7 +81,7 @@ func main() {
     UserTable.Query().Delete(1, 2, 3)
     
     //insert
-    _ = UserTable.Query().Insert(&User{Name: "han"})   
+    UserTable.Query().Insert(&User{Name: "han"})   
     
     //update users with different names
     _ = UserTable.Query().OnConflictUpdate(&UserTable.Name, &UserTable.Name).
@@ -92,8 +92,8 @@ func main() {
 
 ```go
     //query join 
-    UserTable.Query().Join(OrderTable, func (query *orm.Query[*User]) *orm.Query[*User] {
-            return query.Where(&UserTable.Id, &OrderTable.UserId)
+    UserTable.Query().Join(OrderTable, func (join *orm.Query[*User]) *orm.Query[*User] {
+            return join.Where(&UserTable.Id, &OrderTable.UserId)
     }).Select(UserTable).Gets()
 ```
 
@@ -103,7 +103,7 @@ func main() {
     //transaction
     _ = UserTable.Query().Transaction(func (query *orm.Query[*User]) error {
         newId := query.Insert(&User{Name: "john"}).LastInsertId //insert
-        //newId := orm.NewQuery(UserTable).UseTx(query.Tx()).Insert(User{Name: "john"}).LastInsertId
+        //newId := orm.NewQuery(UserTable).UseTx(query.Tx()).Insert(&User{Name: "john"}).LastInsertId
         fmt.Println(newId)
         return errors.New("I want rollback") //rollback
     })
