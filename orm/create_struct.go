@@ -80,7 +80,6 @@ func (q *Query[T]) CreateStruct(file ...string) error {
         structFile = file[0]
     } else {
         _, fs, _, _ := runtime.Caller(1)
-        fmt.Println(fs)
         structFile = fs
     }
 

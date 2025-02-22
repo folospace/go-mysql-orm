@@ -12,6 +12,7 @@ const primaryKeyPrefix = "primary"
 const uniqueKeyPrefix = "unique"
 const keyPrefix = "index"
 const nullPrefix = "null"
+const notNullPrefix = "not null"
 const autoIncrementPrefix = "auto_increment"
 const createdAtColumn = "created_at"
 const updatedAtColumn = "updated_at"
@@ -143,7 +144,6 @@ func generateColumnStrings(dbColums []dBColumn) []string {
         } else {
             words = append(words, "not null")
         }
-
         //add default
         if v.AutoIncrement {
             words = append(words, "auto_increment")
@@ -274,14 +274,16 @@ func getMigrateColumns(table *queryTable) []dBColumn {
         }
 
         if column.Name == createdAtColumn {
-            column.Type = "timestamp"
+            column.Null = false
+            column.Type = "datetime"
             column.Default = "CURRENT_TIMESTAMP"
         } else if column.Name == updatedAtColumn {
-            column.Type = "timestamp"
+            column.Null = false
+            column.Type = "datetime"
             column.Default = "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
         } else if column.Name == deletedAtColumn {
             column.Null = true
-            column.Type = "timestamp"
+            column.Type = "datetime"
             column.Default = "Null"
         }
 
@@ -297,16 +299,24 @@ func getMigrateColumns(table *queryTable) []dBColumn {
                 }
             }
         }
+        if strings.ToLower(column.Default) == "null" {
+            column.Null = true
+        }
 
         if ormTags[0] != "" {
             overideColumn := dBColumn{}
 
+            overrideNull := false
             for k, v := range ormTags {
                 if k == 0 {
                     continue
                 }
                 if v == nullPrefix {
+                    overrideNull = true
                     overideColumn.Null = true
+                } else if v == notNullPrefix {
+                    overrideNull = true
+                    overideColumn.Null = false
                 } else if v == autoIncrementPrefix {
                     overideColumn.AutoIncrement = true
                 } else if strings.HasPrefix(v, primaryKeyPrefix) {
@@ -328,7 +338,9 @@ func getMigrateColumns(table *queryTable) []dBColumn {
                 }
             }
 
-            column.Null = overideColumn.Null
+            if overrideNull {
+                column.Null = overideColumn.Null
+            }
             column.AutoIncrement = overideColumn.AutoIncrement
             column.Primary = overideColumn.Primary
             if overideColumn.Type != "" {
@@ -358,9 +370,11 @@ func getMigrateColumns(table *queryTable) []dBColumn {
 
 func getTypeAndDefault(val reflect.Value) (string, string) {
     var types, defaults string
+    typ := val.Type()
     kind := val.Kind()
     if kind == reflect.Ptr {
-        kind = val.Elem().Kind()
+        kind = val.Type().Elem().Kind()
+        typ = typ.Elem()
     }
     switch kind {
     case reflect.Bool, reflect.Int8:
@@ -397,11 +411,21 @@ func getTypeAndDefault(val reflect.Value) (string, string) {
         types = "varchar(255)"
     default:
         if _, ok := val.Interface().(*time.Time); ok {
-            types = "timestamp"
+            types = "datetime"
         } else if _, ok := val.Interface().(time.Time); ok {
-            types = "timestamp"
+            types = "datetime"
         } else {
-            types = "varchar(255)"
+            realVal := reflect.New(typ)
+            if _, ok := realVal.Elem().Field(0).Interface().(*time.Time); ok {
+                types = "datetime"
+            } else if _, ok := realVal.Elem().Field(0).Interface().(time.Time); ok {
+                types = "datetime"
+            } else {
+                types = "varchar(255)"
+            }
+        }
+        if types == "datetime" {
+            defaults = "current_timestamp"
         }
     }
     return types, defaults

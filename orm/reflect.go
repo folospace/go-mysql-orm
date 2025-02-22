@@ -219,18 +219,42 @@ func getStructFieldWithDefaultTime(obj any) (map[int]any, error) {
         return nil, ErrParamElemKindMustBeStruct
     }
     ret := make(map[int]any)
-
+    now := time.Now()
     for i := 0; i < tableStruct.NumField(); i++ {
-        defaultVar := tableStructType.Field(i).Tag.Get("default")
-        if defaultVar == "" {
-            continue
-        }
-
         v := tableStruct.Field(i)
         if v.CanInterface() {
+            defaultVar := tableStructType.Field(i).Tag.Get("default")
+            name := tableStructType.Field(i).Tag.Get("json")
+            ormName := tableStructType.Field(i).Tag.Get("orm")
+            ormName = strings.Split(ormName, ",")[0]
+            if ormName != "" {
+                name = ormName
+            }
+
             if _, ok := v.Interface().(time.Time); ok {
-                if strings.Contains(strings.ToLower(defaultVar), "current_timestamp") {
-                    ret[i] = time.Now()
+                lowerDefault := strings.ToLower(defaultVar)
+                if strings.Contains(lowerDefault, "current_timestamp") {
+                    ret[i] = now
+                } else if lowerDefault == "" {
+                    if name != deletedAtColumn {
+                        ret[i] = now
+                    }
+                } else if lowerDefault != "null" {
+                    ret[i] = defaultVar
+                }
+            } else if v.Kind() == reflect.Struct {
+                realVal := reflect.New(v.Type())
+                if _, ok := realVal.Elem().Field(0).Interface().(time.Time); ok {
+                    lowerDefault := strings.ToLower(defaultVar)
+                    if strings.Contains(lowerDefault, "current_timestamp") {
+                        ret[i] = now
+                    } else if lowerDefault == "" {
+                        if name != deletedAtColumn {
+                            ret[i] = now
+                        }
+                    } else if lowerDefault != "null" {
+                        ret[i] = defaultVar
+                    }
                 }
             }
         }

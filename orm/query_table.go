@@ -6,15 +6,16 @@ import (
 )
 
 type queryTable struct {
-    table           Table
-    tableStruct     reflect.Value
-    tableStructType reflect.Type
-    ormFields       map[any]string
-    joinType        JoinType //(left|right) join
-    joinCondition   where
-    alias           string
-    rawSql          string
-    bindings        []any
+    table             Table
+    tableStruct       reflect.Value
+    tableStructType   reflect.Type
+    ormFields         map[any]string
+    joinType          JoinType //(left|right) join
+    joinCondition     where
+    alias             string
+    overrideTableName string //override table name
+    rawSql            string
+    bindings          []any
 }
 
 func (q queryTable) getAlias() string {
@@ -42,6 +43,9 @@ func (q queryTable) getTableNameAndAlias() string {
 }
 
 func (q queryTable) getTableName() string {
+    if q.overrideTableName != "" {
+        return q.overrideTableName
+    }
     if q.table.TableName() != "" {
         if q.table.DatabaseName() != "" {
             return q.table.DatabaseName() + "." + q.table.TableName()

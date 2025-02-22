@@ -90,6 +90,10 @@ func (q *Query[T]) Alias(alias string) *Query[T] {
     q.tables[0].alias = alias
     return q
 }
+func (q *Query[T]) TableName(override string) *Query[T] {
+    q.tables[0].overrideTableName = override
+    return q
+}
 
 //query raw, tablename can be empty
 func newQueryRaw(tableName string, writeAndReadDbs ...*sql.DB) *Query[*SubQuery] {
