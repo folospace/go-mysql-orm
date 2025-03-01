@@ -179,7 +179,7 @@ func (q *Query[T]) insert(data any) QueryResult {
         rawSql += " ignore"
     }
 
-    rawSql += " into " + q.tables[0].getTableName() + " " + insertSql
+    rawSql += " into " + q.tables[0].getTableNamePartition() + " " + insertSql
 
     if updateStr != "" {
         rawSql += " on duplicate key update " + updateStr

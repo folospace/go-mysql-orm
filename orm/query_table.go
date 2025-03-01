@@ -14,6 +14,7 @@ type queryTable struct {
     joinCondition     where
     alias             string
     overrideTableName string //override table name
+    partition         string
     rawSql            string
     bindings          []any
 }
@@ -31,7 +32,7 @@ func (q queryTable) getAliasOrTableName() string {
 
 func (q queryTable) getTableNameAndAlias() string {
     var strs []string
-    temp := q.getTableName()
+    temp := q.getTableNamePartition()
     if temp != "" {
         strs = append(strs, temp)
     }
@@ -54,6 +55,27 @@ func (q queryTable) getTableName() string {
         }
     }
     return ""
+}
+
+func (q queryTable) getTableNamePartition() string {
+    if q.overrideTableName != "" {
+        return q.overrideTableName
+    }
+    if q.table.TableName() != "" {
+        if q.table.DatabaseName() != "" {
+            return q.table.DatabaseName() + "." + q.table.TableName() + q.getPartition()
+        } else {
+            return q.table.TableName() + q.getPartition()
+        }
+    }
+    return ""
+}
+
+func (q queryTable) getPartition() string {
+    if q.partition == "" {
+        return ""
+    }
+    return " partition(" + q.partition + ")"
 }
 
 func (q queryTable) getTags(index int, tagName string) []string {

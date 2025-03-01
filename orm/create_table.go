@@ -414,7 +414,7 @@ func getTypeAndDefault(val reflect.Value) (string, string) {
             types = "datetime"
         } else if _, ok := val.Interface().(time.Time); ok {
             types = "datetime"
-        } else {
+        } else if kind == reflect.Struct {
             realVal := reflect.New(typ)
             if _, ok := realVal.Elem().Field(0).Interface().(*time.Time); ok {
                 types = "datetime"
@@ -423,6 +423,8 @@ func getTypeAndDefault(val reflect.Value) (string, string) {
             } else {
                 types = "varchar(255)"
             }
+        } else {
+            types = "varchar(255)"
         }
         if types == "datetime" {
             defaults = "current_timestamp"

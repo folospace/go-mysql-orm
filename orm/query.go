@@ -324,6 +324,10 @@ func (q *Query[T]) OrHaving(column any, vals ...any) *Query[T] {
     }
     return newQuery
 }
+func (q *Query[T]) Partition(p string) *Query[T] {
+    q.tables[0].partition = p
+    return q
+}
 
 func (q *Query[T]) PartitionBy(column any) *Query[T] {
     val, err := q.parseColumn(column)
