@@ -226,9 +226,18 @@ func getStructFieldWithDefaultTime(obj any) (map[int]any, error) {
             defaultVar := tableStructType.Field(i).Tag.Get("default")
             name := tableStructType.Field(i).Tag.Get("json")
             ormName := tableStructType.Field(i).Tag.Get("orm")
-            ormName = strings.Split(ormName, ",")[0]
+            ormNames := strings.Split(ormName, ",")
+            ormName = ormNames[0]
             if ormName != "" {
                 name = ormName
+            }
+            if defaultVar == "" {
+                for _, v := range ormNames {
+                    if strings.ToLower(v) == "null" {
+                        defaultVar = "null"
+                        break
+                    }
+                }
             }
 
             if _, ok := v.Interface().(time.Time); ok {
