@@ -37,6 +37,7 @@ type Query[T Table] struct {
     windows         []*SubQuery
     self            *Query[*SubQuery]
     selectTimeout   string
+    notlog          bool
 }
 
 //query table[struct] generics
@@ -370,4 +371,9 @@ func (q *Query[T]) getOrderAndLimitSqlStr() string {
     }
 
     return strings.Join(ret, " ")
+}
+
+func (q *Query[T]) NotLog() *Query[T] {
+    q.notlog = true
+    return q
 }

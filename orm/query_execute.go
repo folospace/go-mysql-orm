@@ -40,7 +40,7 @@ func (q *Query[T]) Execute() QueryResult {
 
     if err != nil {
         q.result.Err = err
-        if errorLogger != nil {
+        if errorLogger != nil && q.notlog == false {
             errorLogger.Error(q.result.Sql(), q.result.Error())
         }
     } else if res != nil {
