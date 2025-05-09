@@ -244,3 +244,23 @@ func (q *Query[T]) generateWhereStr(wheres []where, bindings *[]any) string {
     }
     return strings.Join(whereStr, " ")
 }
+
+func (q *Query[T]) WhereExists(sq *SubQuery) *Query[T] {
+    q.bindings = append(q.bindings, sq.bindings...)
+    return q.Where("EXISTS (" + sq.raw + ")")
+}
+
+func (q *Query[T]) OrWhereExists(sq *SubQuery) *Query[T] {
+    q.bindings = append(q.bindings, sq.bindings...)
+    return q.OrWhere("EXISTS (" + sq.raw + ")")
+}
+
+func (q *Query[T]) WhereNotExists(sq *SubQuery) *Query[T] {
+    q.bindings = append(q.bindings, sq.bindings...)
+    return q.Where("NOT EXISTS (" + sq.raw + ")")
+}
+
+func (q *Query[T]) OrWhereNotExists(sq *SubQuery) *Query[T] {
+    q.bindings = append(q.bindings, sq.bindings...)
+    return q.OrWhere("NOT EXISTS (" + sq.raw + ")")
+}
