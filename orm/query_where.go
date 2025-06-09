@@ -246,21 +246,25 @@ func (q *Query[T]) generateWhereStr(wheres []where, bindings *[]any) string {
 }
 
 func (q *Query[T]) WhereExists(sq *SubQuery) *Query[T] {
-    q.bindings = append(q.bindings, sq.bindings...)
-    return q.Where("EXISTS (" + sq.raw + ")")
+    t := q.Where("EXISTS (" + sq.raw + ")")
+    t.wheres[len(t.wheres)-1].RawBindings = sq.bindings
+    return t
 }
 
 func (q *Query[T]) OrWhereExists(sq *SubQuery) *Query[T] {
-    q.bindings = append(q.bindings, sq.bindings...)
-    return q.OrWhere("EXISTS (" + sq.raw + ")")
+    t := q.OrWhere("EXISTS (" + sq.raw + ")")
+    t.wheres[len(t.wheres)-1].RawBindings = sq.bindings
+    return t
 }
 
 func (q *Query[T]) WhereNotExists(sq *SubQuery) *Query[T] {
-    q.bindings = append(q.bindings, sq.bindings...)
-    return q.Where("NOT EXISTS (" + sq.raw + ")")
+    t := q.Where("NOT EXISTS (" + sq.raw + ")")
+    t.wheres[len(t.wheres)-1].RawBindings = sq.bindings
+    return t
 }
 
 func (q *Query[T]) OrWhereNotExists(sq *SubQuery) *Query[T] {
-    q.bindings = append(q.bindings, sq.bindings...)
-    return q.OrWhere("NOT EXISTS (" + sq.raw + ")")
+    t := q.OrWhere("NOT EXISTS (" + sq.raw + ")")
+    t.wheres[len(t.wheres)-1].RawBindings = sq.bindings
+    return t
 }
