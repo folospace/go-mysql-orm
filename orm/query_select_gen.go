@@ -117,12 +117,13 @@ func (q *Query[T]) generateSelectQuery(columns ...any) *SubQuery {
         }
 
         if len(q.unions) > 0 {
+            rawSql = "(" + rawSql + ")"
             for _, v := range q.unions {
                 prefix := "\nunion"
                 if v.unionAll {
                     prefix += " all"
                 }
-                prefix += " \n" + v.raw
+                prefix += " \n" + "(" + v.raw + ")"
                 rawSql += prefix
                 bindings = append(bindings, v.bindings...)
             }
