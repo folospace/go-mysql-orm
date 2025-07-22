@@ -64,6 +64,24 @@ func (q *Query[T]) WherePrimaryIfNotZero(val any) *Query[T] {
     }
 }
 
+func (q *Query[T]) WhereFirstFieldIfNotZero(val any) *Query[T] {
+    rval := reflect.ValueOf(val)
+    if rval.IsZero() {
+        return q
+    } else {
+        if rval.Kind() == reflect.Ptr {
+            rval = rval.Elem()
+        }
+        if rval.Kind() != reflect.Struct {
+            return q
+        }
+        if rval.NumField() == 0 {
+            return q
+        }
+        return q.WherePrimary(rval.Field(0).Interface())
+    }
+}
+
 //short for OrWhere(primaryKey, vals...)
 func (q *Query[T]) OrWherePrimary(operator any, vals ...any) *Query[T] {
     //operator as vals
@@ -92,17 +110,25 @@ func (q *Query[T]) OrWhereBetween(column any, valLess, valGreat any) *Query[T] {
     })
 }
 
-//"id=1"
-//&obj.id, 1
-//&obj.id, "=", 1
-func (q *Query[T]) WhereFunc(f func(where *Query[T]) *Query[T]) *Query[T] {
+func (q *Query[T]) WhereFunc(f func(wheref *Query[T]) *Query[T]) *Query[T] {
     return q.whereGroup(false, f)
 }
 
-//"id=1"
-//&obj.id, 1
-//&obj.id, "=", 1
-func (q *Query[T]) OrWhereFunc(f func(where *Query[T]) *Query[T]) *Query[T] {
+func (q *Query[T]) OrWhereFunc(f func(wheref *Query[T]) *Query[T]) *Query[T] {
+    return q.whereGroup(true, f)
+}
+
+func (q *Query[T]) WhereFuncIf(ifval bool, f func(wheref *Query[T]) *Query[T]) *Query[T] {
+    if ifval == false {
+        return q
+    }
+    return q.whereGroup(false, f)
+}
+
+func (q *Query[T]) OrWhereFuncIf(ifval bool, f func(wheref *Query[T]) *Query[T]) *Query[T] {
+    if ifval == false {
+        return q
+    }
     return q.whereGroup(true, f)
 }
 
