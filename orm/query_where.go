@@ -121,18 +121,32 @@ func (q *Query[T]) OrWhereFunc(f func(wheref *Query[T]) *Query[T]) *Query[T] {
     return q.whereGroup(true, f)
 }
 
-func (q *Query[T]) WhereFuncIf(ifval bool, f func(wheref *Query[T]) *Query[T]) *Query[T] {
+func (q *Query[T]) WhereFuncIf(ifval bool, f ...func(wheref *Query[T]) *Query[T]) *Query[T] {
     if ifval == false {
+        if len(f) > 1 && f[1] != nil {
+            return q.whereGroup(false, f[1])
+        }
         return q
     }
-    return q.whereGroup(false, f)
+
+    if len(f) > 0 && f[0] != nil {
+        return q.whereGroup(false, f[0])
+    }
+    return q
 }
 
-func (q *Query[T]) OrWhereFuncIf(ifval bool, f func(wheref *Query[T]) *Query[T]) *Query[T] {
+func (q *Query[T]) OrWhereFuncIf(ifval bool, f ...func(wheref *Query[T]) *Query[T]) *Query[T] {
     if ifval == false {
+        if len(f) > 1 && f[1] != nil {
+            return q.whereGroup(true, f[1])
+        }
         return q
     }
-    return q.whereGroup(true, f)
+
+    if len(f) > 0 && f[0] != nil {
+        return q.whereGroup(true, f[0])
+    }
+    return q
 }
 
 func (q *Query[T]) whereGroup(isOr bool, f func(where *Query[T]) *Query[T]) *Query[T] {
