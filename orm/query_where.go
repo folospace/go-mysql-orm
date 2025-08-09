@@ -64,7 +64,7 @@ func (q *Query[T]) WherePrimaryIfNotZero(val any) *Query[T] {
     }
 }
 
-func (q *Query[T]) WhereFirstFieldIfNotZero(val any) *Query[T] {
+func (q *Query[T]) WhereStructPrimaryIfNotZero(val any) *Query[T] {
     rval := reflect.ValueOf(val)
     if rval.IsZero() {
         return q
@@ -76,6 +76,9 @@ func (q *Query[T]) WhereFirstFieldIfNotZero(val any) *Query[T] {
             return q
         }
         if rval.NumField() == 0 {
+            return q
+        }
+        if rval.Field(0).IsZero() {
             return q
         }
         return q.WherePrimary(rval.Field(0).Interface())
