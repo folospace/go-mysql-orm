@@ -48,15 +48,47 @@ func (q *Query[T]) GetBool() (bool, QueryResult) {
     return ret, res
 }
 
+//get float
+func (q *Query[T]) GetFloat64() (float64, QueryResult) {
+    var ret float64
+    res := q.Limit(1).GetTo(&ret)
+    return ret, res
+}
+
 //get first int
 func (q *Query[T]) GetInt() (int64, QueryResult) {
     var ret int64
     res := q.Limit(1).GetTo(&ret)
     return ret, res
 }
+
+func (q *Query[T]) GetSliceInt() ([]int64, QueryResult) {
+    var ret []int64
+    res := q.GetTo(&ret)
+    return ret, res
+}
+
+func (q *Query[T]) GetMapInt() (map[int64]int64, QueryResult) {
+    var ret map[int64]int64
+    res := q.GetTo(&ret)
+    return ret, res
+}
+
 func (q *Query[T]) GetUint() (uint64, QueryResult) {
     var ret uint64
     res := q.Limit(1).GetTo(&ret)
+    return ret, res
+}
+
+func (q *Query[T]) GetSliceUint() ([]uint64, QueryResult) {
+    var ret []uint64
+    res := q.GetTo(&ret)
+    return ret, res
+}
+
+func (q *Query[T]) GetMapUint() (map[uint64]uint64, QueryResult) {
+    var ret map[uint64]uint64
+    res := q.GetTo(&ret)
     return ret, res
 }
 
@@ -67,22 +99,12 @@ func (q *Query[T]) GetString() (string, QueryResult) {
     return ret, res
 }
 
-// ↓↓ more Get examples ↓↓
-func (q *Query[T]) GetSliceInt() ([]int64, QueryResult) {
-    var ret []int64
-    res := q.GetTo(&ret)
-    return ret, res
-}
-func (q *Query[T]) GetSliceUint() ([]uint64, QueryResult) {
-    var ret []uint64
-    res := q.GetTo(&ret)
-    return ret, res
-}
 func (q *Query[T]) GetSliceString() ([]string, QueryResult) {
     var ret []string
     res := q.GetTo(&ret)
     return ret, res
 }
+
 func (q *Query[T]) GetMapString() (map[string]string, QueryResult) {
     var ret map[string]string
     res := q.GetTo(&ret)
@@ -93,6 +115,7 @@ func (q *Query[T]) GetMapSliceString() (map[string][]string, QueryResult) {
     res := q.GetTo(&ret)
     return ret, res
 }
+
 func (q *Query[T]) GetMapStringInt() (map[string]int64, QueryResult) {
     var ret map[string]int64
     res := q.GetTo(&ret)
@@ -110,16 +133,6 @@ func (q *Query[T]) GetMapStringUint() (map[string]uint64, QueryResult) {
 }
 func (q *Query[T]) GetMapUintString() (map[uint64]string, QueryResult) {
     var ret map[uint64]string
-    res := q.GetTo(&ret)
-    return ret, res
-}
-func (q *Query[T]) GetMapInt() (map[int64]int64, QueryResult) {
-    var ret map[int64]int64
-    res := q.GetTo(&ret)
-    return ret, res
-}
-func (q *Query[T]) GetMapUint() (map[uint64]uint64, QueryResult) {
-    var ret map[uint64]uint64
     res := q.GetTo(&ret)
     return ret, res
 }
