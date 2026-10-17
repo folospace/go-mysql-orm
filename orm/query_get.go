@@ -568,7 +568,9 @@ func (q *Query[T]) scanValues(basePtrs []any, rowColumns []string, rows *sql.Row
         for k, v := range tempPtrs {
             if *v.(*any) == nil {
                 felement := reflect.ValueOf(basePtrs[k]).Elem()
-                felement.Set(reflect.Zero(felement.Type()))
+                if felement.Kind() != reflect.Ptr {
+                    felement.Set(reflect.Zero(felement.Type()))
+                }
                 finalPtrs[k] = v
             } else {
                 finalPtrs[k] = basePtrs[k]
