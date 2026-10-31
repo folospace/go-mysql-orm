@@ -8,8 +8,7 @@ import (
     "strings"
 )
 
-var scanErrPrefix = "sql: Scan error on column index"
-var matchScanErrIndex = regexp.MustCompile("\\d+")
+var scanErrMatch = regexp.MustCompile(`Scan error on column index (\d+),`)
 
 //get first T
 func (q *Query[T]) Get(primaryIds ...any) (T, QueryResult) {
@@ -567,9 +566,11 @@ func (q *Query[T]) scanValues(basePtrs []any, rowColumns []string, rows *sql.Row
 
         for k, v := range tempPtrs {
             if *v.(*any) == nil {
-                felement := reflect.ValueOf(basePtrs[k]).Elem()
-                if felement.Kind() != reflect.Ptr {
-                    felement.Set(reflect.Zero(felement.Type()))
+                if len(basePtrs) > k {
+                    felement := reflect.ValueOf(basePtrs[k]).Elem()
+                    if felement.Kind() != reflect.Ptr {
+                        felement.Set(reflect.Zero(felement.Type()))
+                    }
                 }
                 finalPtrs[k] = v
             } else {
@@ -577,18 +578,26 @@ func (q *Query[T]) scanValues(basePtrs []any, rowColumns []string, rows *sql.Row
             }
         }
 
-        err = rows.Scan(finalPtrs...)
-        //set zero value after err column index
-        if err != nil && strings.HasPrefix(err.Error(), scanErrPrefix) {
-            indexs := matchScanErrIndex.FindAllString(err.Error(), 1)
-            if len(indexs) > 0 {
-                i, _ := strconv.Atoi(indexs[0])
-                for k := range basePtrs {
-                    if k >= i {
-                        felement := reflect.ValueOf(basePtrs[k]).Elem()
+        for {
+            err1 := rows.Scan(finalPtrs...)
+            if err1 != nil {
+                err = err1
+                matches := scanErrMatch.FindStringSubmatch(err.Error())
+                if len(matches) != 2 {
+                    break
+                }
+                i, _ := strconv.Atoi(matches[1])
+                if len(finalPtrs) > i {
+                    finalPtrs[i] = tempPtrs[i]
+                }
+                if len(basePtrs) > i {
+                    felement := reflect.ValueOf(basePtrs[i]).Elem()
+                    if felement.Kind() != reflect.Ptr {
                         felement.Set(reflect.Zero(felement.Type()))
                     }
                 }
+            } else {
+                break
             }
         }
 
